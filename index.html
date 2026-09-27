@@ -175,6 +175,25 @@ tr:last-child td{border-bottom:0}
 .demo-flag{background:repeating-linear-gradient(135deg,var(--accent-soft),var(--accent-soft) 10px,var(--surface) 10px,var(--surface) 20px);border:1px dashed var(--accent)}
 .file-drop{border:2px dashed var(--line);border-radius:12px;padding:18px;text-align:center;display:flex;flex-direction:column;gap:8px;align-items:center;background:var(--surface-2)}
 details summary{cursor:pointer;font-weight:700;font-size:13.5px}
+.credit{display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center;padding-block:6px}
+.credit .plate{background:#FFFFFF;border-radius:12px;padding:8px 12px;border:1px solid var(--line);display:inline-flex}
+.credit img{height:52px;width:auto;max-width:100%;display:block}
+.credit span{font-size:12.5px;color:var(--muted);line-height:1.45}
+.credit b{color:var(--ink)}
+.acc{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden}
+.acc+.acc{margin-top:-4px}
+.acc summary{list-style:none;display:flex;align-items:center;gap:12px;padding:14px 16px;font-size:15px}
+.acc summary::-webkit-details-marker{display:none}
+.acc summary .n{flex:none;width:28px;height:28px;border-radius:8px;background:var(--primary-soft);color:var(--primary);display:grid;place-items:center;font-weight:800;font-size:13px}
+.acc summary .t{flex:1}
+.acc summary .t small{display:block;font-weight:600;color:var(--muted);font-size:12px}
+.acc summary::after{content:"";width:9px;height:9px;border-right:2.5px solid var(--muted);border-bottom:2.5px solid var(--muted);transform:rotate(45deg);margin-right:4px;transition:transform .15s}
+.acc[open] summary::after{transform:rotate(-135deg)}
+.acc[open] summary{border-bottom:1px solid var(--line)}
+.acc .body{padding:12px 16px 16px;font-size:14px;display:flex;flex-direction:column;gap:8px}
+.acc .body ol,.acc .body ul{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:5px}
+.acc .body p{margin:0}
+.kbd{display:inline-block;font-weight:700;background:var(--surface-2);border:1px solid var(--line);border-radius:6px;padding:0 6px;font-size:13px;white-space:nowrap}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
 
@@ -187,7 +206,7 @@ details summary{cursor:pointer;font-weight:700;font-size:13.5px}
 "use strict";
 
 /* ============ KONSTANTA ============ */
-const APP_VERSI = "0.3 (uji coba)";
+const APP_VERSI = "0.4 (uji coba)";
 const STORE_KEY = "mpasi_moncongloe_v1";
 const PUSKESMAS = "MONCONGLOE";
 const BULAN = ["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"];
@@ -204,6 +223,9 @@ const FOODS = [
 ];
 const JENIS_INTERVENSI = ["PMT lokal","PMT pabrikan","Konseling PMBA","Kelas Ibu Balita","Rujukan","Lainnya"];
 const EXPORT_COLS = ["No","NIK","Nama","tgl_monitoring","asi","sereal","kacang","susu","daging/unggas","telur","buah_sayur_vita","buah_sayur_lain","dapat_intervensi"];
+
+/* ============ LOGO ============ */
+const LOGO = "data:image/png;base64,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";
 
 /* ============ UTIL ============ */
 const $app = document.getElementById("app");
@@ -472,10 +494,11 @@ function render(){
     case "atur": body=viewAtur(); break;
     case "cadangan": body=viewCadangan(); break;
     case "server": body=viewServer(); break;
+    case "petunjuk": body=viewPetunjuk(); break;
     default: body=viewBeranda();
   }
   const tabs=[["beranda","Beranda",IC.home],["sasaran","Sasaran",IC.list],["rekap","Rekap",IC.chart],["menu","Menu",IC.menu]];
-  const curTab = ["form","tambah"].includes(UI.view)?"sasaran": ["impor","unduh","atur","cadangan","server"].includes(UI.view)?"menu":UI.view;
+  const curTab = ["form","tambah"].includes(UI.view)?"sasaran": ["impor","unduh","atur","cadangan","server","petunjuk"].includes(UI.view)?"menu":UI.view;
   $app.innerHTML=`
   <header class="topbar"><div class="topbar-in">
     <div class="brand"><b>Pantau MP-ASI</b><small>Pkm ${esc(PUSKESMAS)} · ${esc(periodeLabel(p))} · ${esc(u.nama)}</small></div>
@@ -502,10 +525,97 @@ function bindCommon(){
   $app.querySelectorAll("[data-act]").forEach(b=>b.addEventListener("click",()=>ACT[b.dataset.act] && ACT[b.dataset.act](b)));
 }
 
+/* ---- kredit & petunjuk ---- */
+function creditHtml(){
+  return `<div class="credit"><span class="plate"><img src="${LOGO}" alt="Logo Kemenkes Poltekkes Makassar"></span>
+    <span>Aplikasi ini dikembangkan oleh:<br><b>Manjilala - Poltekkes Kemenkes Makassar</b></span></div>`;
+}
+const PETUNJUK = [
+  {t:"Memasang aplikasi di HP", s:"Sekali saja, saat ada sinyal", b:`
+    <ol><li>Buka link aplikasi di <b>Chrome</b> (Android).</li>
+    <li>Ketuk menu <span class="kbd">⋮</span> → <b>Tambahkan ke Layar Utama</b> atau <b>Instal aplikasi</b>.</li>
+    <li>Buka aplikasi dari ikon di layar HP. Setelah dibuka sekali saat ada sinyal, aplikasi bisa dipakai tanpa sinyal.</li></ol>
+    <p class="small muted">iPhone: buka di Safari → Bagikan → Tambahkan ke Layar Utama.</p>`},
+  {t:"Menyambungkan HP dan masuk", s:"Dilakukan sekali per HP", b:`
+    <ol><li>Di layar masuk, ketuk <b>Sambungkan perangkat ini</b>.</li>
+    <li>Tempel <b>kode sambung</b> dari koordinator, <b>atau</b> isi URL aplikasi web dan token.</li>
+    <li>Setelah tersambung, pilih nama Anda dan masukkan PIN, lalu ketuk <b>Masuk</b>.</li></ol>
+    <p>Lupa PIN? Minta koordinator menggantinya di Menu → Periode &amp; petugas.</p>`},
+  {t:"Mengisi pemantauan MP-ASI", s:"Recall 24 jam, 8 kelompok pangan", b:`
+    <ol><li>Buka tab <b>Sasaran</b>. Cari nama anak atau pilih desa/posyandu. Pilih <b>Belum</b> untuk melihat yang belum diisi.</li>
+    <li>Ketuk nama anak. Cek identitasnya (nama, NIK, usia) sebelum bertanya.</li>
+    <li>Tanyakan ke ibu/pengasuh: <i>"Kemarin, sejak bangun pagi sampai tidur malam, apakah anak …"</i>, lalu jawab <b>Ya/Tidak</b> untuk ke-8 kelompok pangan. Contoh makanan tertulis di bawah tiap pertanyaan.</li>
+    <li>Jawab pertanyaan <b>intervensi</b>. Kalau Ya, pilih jenisnya (boleh lebih dari satu).</li>
+    <li>Ketuk <b>Simpan</b>. Skor x/8 di bagian bawah bisa dipakai sebagai bahan konseling ke ibu.</li></ol>
+    <p class="small muted">Yang dihitung adalah makanan/minuman <b>kemarin</b> (24 jam), bukan kebiasaan. Susu formula masuk kelompok susu, bukan ASI.</p>`},
+  {t:"Mengubah atau menghapus isian", s:"Kalau ada salah isi", b:`
+    <ul><li>Buka lagi anak tersebut di tab Sasaran (filter <b>Sudah</b>), ubah jawabannya, lalu Simpan. Isian lama akan tertimpa.</li>
+    <li>Untuk menghapus, gunakan tombol <b>Hapus isian anak ini</b> di bagian bawah form. Anak tetap ada di daftar sasaran.</li></ul>`},
+  {t:"Anak tidak ada di daftar", s:"Tambah anak manual", b:`
+    <ol><li>Tab Sasaran → <b>+ Tambah anak manual</b>.</li>
+    <li>Isi <b>NIK 16 digit</b> dan <b>nama persis seperti di e-PPGBM</b> (huruf besar dan titik harus sama), lalu jenis kelamin, tanggal lahir, desa, dan posyandu.</li>
+    <li>Simpan, lalu langsung isi pemantauannya.</li></ol>
+    <p class="small muted">Hanya anak 6–23 bulan pada bulan pemantauan yang bisa ditambahkan.</p>`},
+  {t:"Bekerja tanpa sinyal & sinkron", s:"Arti status di pojok kanan atas", b:`
+    <p>Isian langsung tersimpan di HP walaupun tidak ada sinyal, lalu terkirim otomatis ke Google Sheet saat sinyal kembali dan aplikasi terbuka.</p>
+    <ul><li><b>Tersinkron 10.30</b>: semua data sudah terkirim.</li>
+    <li><b>3 belum terkirim</b>: menunggu dikirim, akan terkirim beberapa detik lagi.</li>
+    <li><b>Offline · 3 antre</b>: tidak ada sinyal, data aman di HP.</li>
+    <li><b>Gagal sinkron</b>: ketuk status untuk mencoba lagi. Kalau tetap gagal, lapor ke koordinator.</li>
+    <li><b>Mode lokal</b>: HP belum tersambung ke server.</li></ul>
+    <p>Setelah kembali dari lapangan, buka aplikasi saat ada sinyal dan pastikan statusnya <b>Tersinkron</b>. <b>Jangan hapus data browser/Chrome</b> sebelum semua isian terkirim.</p>`},
+  {t:"Arti tanda di daftar anak", s:"Lingkaran skor dan label", b:`
+    <ul><li><b>Belum</b> (lingkaran putus-putus): belum diisi. <b>6/8</b> hijau: skor ≥5. <b>3/8</b> kuning: skor &lt;5.</li>
+    <li><b>Pendek / Sangat pendek / Gizi kurang / BB kurang</b>: status gizi dari penimbangan terakhir di e-PPGBM, sebagai prioritas konseling.</li>
+    <li><b>Sudah 24 bln hari ini</b>: anak sudah lewat usia sasaran, tidak perlu diisi.</li>
+    <li><b>Manual</b>: anak ditambah manual. <b>Diisi ganda</b>: diisi lebih dari satu petugas, dicek koordinator.</li>
+    <li><b>NIK ≠16 digit / Tanpa NIK</b>: tetap bisa diisi, tapi tidak ikut di Excel e-PPGBM sampai NIK diperbaiki.</li></ul>`},
+  {t:"Koordinator: menyiapkan periode baru", s:"Maret, Juni, September, Desember", k:true, b:`
+    <ol><li>Menu → <b>Periode &amp; petugas</b> → ganti <b>periode aktif</b> (misal Desember 2026). Semua HP ikut pindah saat sinkron.</li>
+    <li>Di e-PPGBM, unduh <b>Laporan → Daftar Anak Berdasarkan Status Gizi</b> bulan pemantauan atau 1 bulan sebelumnya. Jangan di-save ulang sebagai "Web Page".</li>
+    <li>Menu → <b>Impor data sasaran</b> → pilih file (boleh 2 file sekaligus) → periksa pratinjau → <b>Simpan</b>.</li></ol>
+    <p class="small muted">Data periode sebelumnya tidak terhapus. Setiap periode tersimpan terpisah.</p>`},
+  {t:"Koordinator: mengelola petugas", s:"Tambah petugas, ganti PIN", k:true, b:`
+    <ul><li>Menu → Periode &amp; petugas → isi nama + PIN → <b>Tambah petugas</b>.</li>
+    <li><b>Ganti PIN</b> untuk petugas yang lupa PIN. Ganti juga PIN awal Koordinator (1234).</li>
+    <li>Menu → <b>Sambungan server</b> → <b>Salin kode sambung</b>, lalu kirim ke petugas lewat pesan pribadi, bukan grup.</li></ul>`},
+  {t:"Koordinator: unduh Excel & unggah ke e-PPGBM", s:"Setelah pemantauan selesai", k:true, b:`
+    <ol><li>Menu → <b>Unduh Excel e-PPGBM</b>. Periksa jumlah yang siap diunggah dan daftar anak manual.</li>
+    <li>Ketuk <b>Unduh MPASI_Moncongloe_….xlsx</b>. Jangan ubah isi file di Excel.</li>
+    <li>Di e-PPGBM, buka menu impor pemantauan MP-ASI, lalu unggah file tersebut.</li></ol>
+    <p>Untuk periode sebelumnya, pilih di kotak <b>Periode yang ditampilkan</b>. Periode kerja petugas tidak berubah. <b>Rekap lengkap</b> hanya untuk laporan puskesmas, bukan untuk diunggah.</p>`},
+  {t:"Cadangan data", s:"Kalau sinkron bermasalah", b:`
+    <ul><li>Menu → <b>Cadangan data</b> → <b>Unduh file cadangan</b> menyimpan semua data di HP ini ke satu file .json.</li>
+    <li>File itu bisa dikirim ke koordinator, lalu dibuka lewat <b>Gabungkan dari file cadangan</b> di laptop koordinator.</li></ul>`},
+  {t:"Masalah yang sering terjadi", s:"Pesan error dan solusinya", b:`
+    <ul><li><b>"File ini hanya berisi bingkai"</b>: file e-PPGBM sudah di-save ulang sebagai Web Page. Unduh ulang dari e-PPGBM, atau save as .xlsx.</li>
+    <li><b>"Tidak ada kolom Tgl Lahir"</b>: yang dipilih file Format Import, bukan laporan Daftar Anak.</li>
+    <li><b>"Tanggal monitoring harus di bulan …"</b>: isian hanya bisa dibuat di bulan pemantauan yang aktif.</li>
+    <li><b>"Token salah"</b>: token server sudah diganti. Minta kode sambung terbaru ke koordinator.</li>
+    <li><b>Daftar anak kosong di HP petugas</b>: ketuk status sinkron di pojok kanan atas, atau cek apakah koordinator sudah mengimpor sasaran untuk periode aktif.</li></ul>`}
+];
+function petunjukHtml(){
+  const k=isKoor(); const login=!me();
+  return PETUNJUK.filter(x=>!x.k || k || login).map((x,i)=>`<details class="acc"><summary><span class="n">${i+1}</span><span class="t">${esc(x.t)}<small>${esc(x.s)}</small></span></summary><div class="body">${x.b}</div></details>`).join("");
+}
+function viewPetunjuk(){
+  return `<button class="btn sm" data-go="menu" style="align-self:flex-start">← Menu</button>
+  <section class="stack" style="gap:4px"><h2 style="font-size:20px;font-weight:800">Petunjuk penggunaan</h2><p class="small muted" style="margin:0">Ketuk judul untuk membuka penjelasan.</p></section>
+  <div class="stack" style="gap:8px">${petunjukHtml()}</div>
+  ${creditHtml()}`;
+}
+
 /* ---- login ---- */
 function renderLogin(){
   const users=aktifPetugas();
   const defaultPin = users.length===1 && users[0].pinDefault;
+  if(UI.loginPetunjuk){
+    $app.innerHTML=`<main><button class="btn sm" id="lgBack" style="align-self:flex-start">← Kembali ke layar masuk</button>
+      <section class="stack" style="gap:4px"><h2 style="font-size:20px;font-weight:800">Petunjuk penggunaan</h2><p class="small muted" style="margin:0">Ketuk judul untuk membuka penjelasan.</p></section>
+      <div class="stack" style="gap:8px">${petunjukHtml()}</div>${creditHtml()}</main>`;
+    document.getElementById("lgBack").onclick=()=>{ UI.loginPetunjuk=false; render(); };
+    return;
+  }
   $app.innerHTML=`<div class="login"><div class="card">
     <div class="row"><div class="logo">${IC.bowl}</div><div><h1 style="font-size:20px;font-weight:800">Pantau MP-ASI</h1><div class="muted small">Puskesmas Moncongloe · Kab. Maros</div></div></div>
     <p class="small muted" style="margin:0">Pencatatan 8 kelompok pangan anak 6–23 bulan untuk diunggah ke e-PPGBM.</p>
@@ -514,8 +624,11 @@ function renderLogin(){
     <div id="lgE" class="small" style="color:var(--danger)" hidden></div>
     <button class="btn primary block" id="lgB">Masuk</button>
     ${defaultPin?`<div class="banner info"><div>PIN awal Koordinator: <b>1234</b>. Ganti di menu <b>Periode &amp; Petugas</b> setelah masuk.</div></div>`:""}
-    <div class="spread small"><span class="muted">Versi ${APP_VERSI}</span>${DB.server?`<span class="tag green">Tersambung ke server</span>`:`<button class="btn sm" id="lgS">Sambungkan perangkat ini</button>`}</div>
+    <div class="row" style="justify-content:space-between"><button class="btn sm" id="lgH">Petunjuk penggunaan</button>${DB.server?`<span class="tag green">Tersambung ke server</span>`:`<button class="btn sm" id="lgS">Sambungkan perangkat ini</button>`}</div>
+    <div class="small muted">Versi ${APP_VERSI}</div>
+    ${creditHtml()}
   </div></div>`;
+  document.getElementById("lgH").onclick=()=>{ UI.loginPetunjuk=true; render(); window.scrollTo(0,0); };
   const ls=document.getElementById("lgS"); if(ls) ls.onclick=connectDevice;
   const doLogin=async()=>{ const id=document.getElementById("lgU").value; const pin=document.getElementById("lgP").value.trim(); const u=aktifPetugas().find(x=>x.id===id);
     const e=document.getElementById("lgE");
@@ -776,11 +889,13 @@ function viewMenu(){
     ${it("server","Sambungan server",DB.server?"Tersambung ke Google Sheet · kode sambung untuk HP petugas":"Belum tersambung · hubungkan ke Google Sheet puskesmas")}
   </div>`:""}
   <div class="eyebrow">Umum</div><div class="list">
+    ${it("petunjuk","Petunjuk penggunaan","Cara memakai aplikasi, langkah demi langkah")}
     ${it("tambah","Tambah anak manual","Anak 6–23 bulan yang tidak ada di file impor")}
     ${it("cadangan","Cadangan data","Simpan atau pulihkan data sebagai file")}
     <button class="item" data-act="keluar"><span class="who"><span class="nm">Keluar</span><span class="meta">Masuk sebagai ${esc(me().nama)}</span></span></button>
   </div>
-  <p class="small muted">Pantau MP-ASI versi ${APP_VERSI}. ${DB.server?"Data disinkronkan ke Google Sheet puskesmas.":"Perangkat ini belum tersambung ke server; data hanya ada di perangkat ini."}</p>`;
+  <p class="small muted">Pantau MP-ASI versi ${APP_VERSI}. ${DB.server?"Data disinkronkan ke Google Sheet puskesmas.":"Perangkat ini belum tersambung ke server; data hanya ada di perangkat ini."}</p>
+  ${creditHtml()}`;
 }
 
 /* ---- impor ---- */

@@ -1,5 +1,5 @@
 // Service worker Pantau MP-ASI: simpan aplikasi agar bisa dibuka tanpa sinyal.
-const CACHE = "pantau-mpasi-v0.3";
+const CACHE = "pantau-mpasi-v0.4";
 const FILES = ["./", "./index.html", "./xlsx.full.min.js", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png"];
 self.addEventListener("install", e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES)).then(() => self.skipWaiting())); });
 self.addEventListener("activate", e => { e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== CACHE).map(k => caches.delete(k)))).then(() => self.clients.claim())); });
