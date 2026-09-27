@@ -3,8 +3,9 @@
  * Versi 0.2
  *
  * Cara pasang (ringkas; panduan lengkap ada di PANDUAN-APPS-SCRIPT):
- *  1. Buat Google Sheet baru, misal "Data Pantau MP-ASI Moncongloe".
- *  2. Ekstensi → Apps Script. Hapus isi Code.gs, tempel seluruh kode ini, lalu Simpan.
+ *  1. Buat Google Sheet baru lalu Ekstensi → Apps Script, ATAU buat proyek baru langsung
+ *     di script.google.com (Sheet akan dibuat otomatis oleh fungsi setup).
+ *  2. Hapus isi Code.gs, tempel seluruh kode ini, lalu Simpan.
  *  3. Pilih fungsi "setup" di toolbar, klik Jalankan, lalu izinkan akses.
  *     Token rahasia akan muncul di Log eksekusi dan di tab "pengaturan".
  *  4. Terapkan → Deployment baru → Jenis: Aplikasi web.
@@ -13,7 +14,7 @@
  *     Pantau MP-ASI: Menu → Sambungan server.
  */
 
-var VERSI = '0.2';
+var VERSI = '0.2.1';
 
 var FOODS = ['asi', 'sereal', 'kacang', 'susu', 'daging/unggas', 'telur', 'buah_sayur_vita', 'buah_sayur_lain'];
 
@@ -40,8 +41,8 @@ function onOpen() {
 
 /** Jalankan sekali. Aman dijalankan ulang: tidak menghapus data. */
 function setup() {
+  var ss = ss_();
   Object.keys(TABEL).forEach(function (n) { sheet_(n); });
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
   var def = ss.getSheetByName('Sheet1') || ss.getSheetByName('Sheet 1');
   if (def && def.getLastRow() === 0 && ss.getSheets().length > 1) ss.deleteSheet(def);
   var props = PropertiesService.getScriptProperties();
@@ -49,11 +50,13 @@ function setup() {
   if (!token) { token = tokenAcak_(); props.setProperty('TOKEN', token); }
   setPengaturan_('token_petunjuk', 'Token tersimpan aman di Script Properties. Menu Pantau MP-ASI → Tampilkan token.');
   if (!getPengaturan_('periode')) setPengaturan_('periode', periodeAwal_());
-  pesan_('Setup selesai.\n\nToken rahasia:\n' + token + '\n\nLangkah berikutnya: Terapkan → Deployment baru → Aplikasi web (Jalankan sebagai: Saya, Akses: Siapa saja).');
+  pesan_('Setup selesai.\n\nToken rahasia:\n' + token + '\n\nGoogle Sheet data:\n' + ss.getUrl() + '\n\nLangkah berikutnya: Terapkan → Deployment baru → Aplikasi web (Jalankan sebagai: Saya, Akses: Siapa saja).');
 }
 
 function tampilkanToken() {
-  pesan_('Token rahasia:\n' + PropertiesService.getScriptProperties().getProperty('TOKEN') +
+  var t = PropertiesService.getScriptProperties().getProperty('TOKEN');
+  if (!t) { pesan_('Token belum dibuat. Jalankan fungsi "setup" terlebih dahulu.'); return; }
+  pesan_('Token rahasia:\n' + t + '\n\nGoogle Sheet data:\n' + ss_().getUrl() +
          '\n\nJangan dibagikan di grup. Kirim hanya ke petugas lewat pesan pribadi, sebagai bagian dari "kode sambung".');
 }
 
@@ -215,8 +218,21 @@ function pemantauanKeKlien_(r) {
 
 /* ================= SHEET HELPER ================= */
 
+/** Spreadsheet data: yang menempel ke skrip, atau yang dibuat otomatis oleh setup. */
+function ss_() {
+  var aktif = null;
+  try { aktif = SpreadsheetApp.getActiveSpreadsheet(); } catch (e) {}
+  if (aktif) return aktif;
+  var props = PropertiesService.getScriptProperties();
+  var id = props.getProperty('SHEET_ID');
+  if (id) return SpreadsheetApp.openById(id);
+  var baru = SpreadsheetApp.create('Data Pantau MP-ASI Moncongloe');
+  props.setProperty('SHEET_ID', baru.getId());
+  return baru;
+}
+
 function sheet_(nama) {
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var ss = ss_();
   var kol = TABEL[nama];
   var sh = ss.getSheetByName(nama);
   if (!sh) sh = ss.insertSheet(nama);
@@ -300,5 +316,9 @@ function periodeAwal_() {
 
 function pesan_(teks) {
   Logger.log(teks);
-  try { SpreadsheetApp.getUi().alert(teks); } catch (e) { /* dijalankan dari editor: lihat Log eksekusi */ }
+  // Jendela pesan hanya bila dijalankan dari menu di Google Sheet; dari editor cukup Log eksekusi.
+  var aktif = null;
+  try { aktif = SpreadsheetApp.getActiveSpreadsheet(); } catch (e) {}
+  if (!aktif) return;
+  try { SpreadsheetApp.getUi().alert(teks); } catch (e) {}
 }

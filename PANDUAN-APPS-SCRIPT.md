@@ -5,8 +5,10 @@ Waktu yang dibutuhkan: sekitar 15 menit, di laptop, dengan akun Google yang akan
 
 ## A. Membuat Google Sheet dan Apps Script
 
-1. Buka **sheets.google.com** → buat spreadsheet kosong. Beri nama, misalnya **Data Pantau MP-ASI Moncongloe**.
-2. Klik menu **Ekstensi → Apps Script**. Tab baru akan terbuka.
+1. Pilih salah satu cara:
+   - **Dari Google Sheet:** buka sheets.google.com, buat spreadsheet kosong (misal **Data Pantau MP-ASI Moncongloe**), lalu klik **Ekstensi → Apps Script**; atau
+   - **Langsung di script.google.com:** buat proyek baru. Google Sheet data akan dibuat otomatis oleh fungsi `setup`, dan link-nya muncul di Log eksekusi.
+2. Tab editor Apps Script akan terbuka.
 3. Di file `Code.gs`, hapus semua isinya, lalu tempel **seluruh isi file Code.gs** yang dikirim. Klik ikon **Simpan** (disket).
 4. Di toolbar atas, pastikan fungsi yang dipilih adalah **setup**, lalu klik **Jalankan**.
 5. Akan muncul permintaan izin. Klik **Tinjau izin** dan pilih akun Anda.

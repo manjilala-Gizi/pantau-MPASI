@@ -981,13 +981,21 @@ async function hubungkan(srv){
 function connectDevice(){
   $ov.innerHTML=`<div class="modal-bg" role="dialog" aria-modal="true"><div class="modal">
     <b>Sambungkan perangkat ini</b>
-    <p class="small muted" style="margin:0">Tempel <b>kode sambung</b> yang dikirim koordinator (diawali MPASI1.). Setelah tersambung, daftar sasaran dan akun petugas akan diunduh.</p>
-    <textarea id="kIn" rows="4" placeholder="MPASI1.xxxx" style="font-size:13px"></textarea>
+    <p class="small muted" style="margin:0">Tempel <b>kode sambung</b> dari koordinator (diawali MPASI1.), <b>atau</b> isi URL aplikasi web dan token dari Apps Script.</p>
+    <label class="f" for="kIn">Kode sambung<textarea id="kIn" rows="3" placeholder="MPASI1.xxxx" style="font-size:13px"></textarea></label>
+    <div class="small muted" style="text-align:center;font-weight:700">atau</div>
+    <label class="f" for="kUrl">URL aplikasi web<input type="text" id="kUrl" placeholder="https://script.google.com/macros/s/…/exec" autocomplete="off"></label>
+    <label class="f" for="kTok">Token<input type="text" id="kTok" placeholder="24 karakter" autocomplete="off"></label>
     <div id="kErr" class="small" style="color:var(--danger)" hidden></div>
     <div class="row" style="justify-content:flex-end"><button class="btn" id="mNo">Batal</button><button class="btn primary" id="mOk">Sambungkan</button></div></div></div>`;
   document.getElementById("mNo").onclick=()=>$ov.innerHTML="";
   document.getElementById("mOk").onclick=async()=>{ const b=document.getElementById("mOk"), e=document.getElementById("kErr");
-    try{ b.disabled=true; b.textContent="Menghubungkan…"; e.hidden=true; const srv=bacaKode(document.getElementById("kIn").value); const hs=await hubungkan(srv);
+    try{ b.disabled=true; b.textContent="Menghubungkan…"; e.hidden=true; const kode=document.getElementById("kIn").value.trim(), u=document.getElementById("kUrl").value.trim(), t=document.getElementById("kTok").value.trim();
+      let srv;
+      if(kode.startsWith("MPASI1.")) srv=bacaKode(kode);
+      else if(u||t){ if(!/^https:\/\/script\.google\.com\/.+\/exec$/.test(u)) throw new Error("URL harus diawali https://script.google.com/ dan berakhiran /exec."); if(t.length<10) throw new Error("Isi token dari Apps Script (24 karakter)."); srv={url:u, token:t}; }
+      else if(kode) throw new Error("Itu bukan kode sambung. Kalau yang Anda punya adalah token, isikan di kolom Token bersama URL aplikasi web.");
+      else throw new Error("Isi kode sambung, atau URL dan token."); const hs=await hubungkan(srv);
       $ov.innerHTML=""; toast(hs==="baru"?"Tersambung. Silakan masuk dengan nama dan PIN Anda.":"Tersambung dan data perangkat ini dikirim."); render(); }
     catch(err){ e.textContent=err.message||String(err); e.hidden=false; b.disabled=false; b.textContent="Sambungkan"; } };
 }
