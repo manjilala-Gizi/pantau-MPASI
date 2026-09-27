@@ -187,7 +187,7 @@ details summary{cursor:pointer;font-weight:700;font-size:13.5px}
 "use strict";
 
 /* ============ KONSTANTA ============ */
-const APP_VERSI = "0.2 (uji coba)";
+const APP_VERSI = "0.3 (uji coba)";
 const STORE_KEY = "mpasi_moncongloe_v1";
 const PUSKESMAS = "MONCONGLOE";
 const BULAN = ["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"];
@@ -265,6 +265,25 @@ function markAllLocal(){
   for(const u of DB.petugas){ u.waktuUbah=u.waktuUbah||new Date().toISOString(); DB.antri.u[u.id]=Date.now(); }
   if(!DB.pengaturan.waktu) DB.pengaturan.waktu=new Date().toISOString();
   DB.antri.set=true;
+}
+function viewPer(){ return (isKoor() && UI.lihatPer) ? UI.lihatPer : per(); }
+function periodeTersedia(){ const set=new Set(periodeOptions()); Object.keys(DB.sasaran).forEach(k=>{ if((DB.sasaran[k]||[]).some(x=>!x.demo)) set.add(k); }); set.add(per()); return [...set].sort(); }
+function pilihPeriodeLihat(){
+  if(!isKoor()) return "";
+  const p=viewPer(), aktif=per();
+  return `<section class="card" style="gap:8px">
+    <label class="f" for="lihatPer">Periode yang ditampilkan<select id="lihatPer">${periodeTersedia().map(o=>{ const n=(DB.sasaran[o]||[]).filter(x=>!x.demo).length; return `<option value="${o}" ${o===p?"selected":""}>${esc(periodeLabel(o))}${o===aktif?" · periode kerja":""}${n?" · "+n+" anak":""}</option>`; }).join("")}</select></label>
+    ${p!==aktif?`<div class="banner info small"><div>Anda sedang melihat <b>${esc(periodeLabel(p))}</b>. Periode kerja petugas tetap <b>${esc(periodeLabel(aktif))}</b> dan tidak berubah.</div></div>`:""}
+    ${UI.lihatLoading?`<div class="small muted">Mengambil data ${esc(periodeLabel(p))} dari server…</div>`:""}
+  </section>`;
+}
+async function gantiLihat(v){
+  UI.lihatPer = (v===per()) ? null : v; render();
+  if(DB.server && v!==per() && navigator.onLine){
+    UI.lihatLoading=true; render();
+    try{ await pullMerge(v, 1); save(); }catch(e){ toast("Tidak bisa mengambil data server: "+(e.message||e)+". Menampilkan data yang ada di perangkat ini."); }
+    UI.lihatLoading=false; render();
+  }
 }
 function keyOf(s){ return s.nik ? s.nik : ("N:"+s.nama+"|"+s.tglLahir); }
 
@@ -446,7 +465,7 @@ function render(){
     case "sasaran": body=viewSasaran(); break;
     case "form": body=viewForm(); break;
     case "tambah": body=viewTambah(); break;
-    case "rekap": body=viewRekap(); break;
+    case "rekap": body=pilihPeriodeLihat()+viewRekap(); break;
     case "menu": body=viewMenu(); break;
     case "impor": body=viewImpor(); break;
     case "unduh": body=viewUnduh(); break;
@@ -474,6 +493,7 @@ function render(){
   if(UI.view==="atur") bindAtur();
   if(UI.view==="cadangan") bindCadangan();
   if(UI.view==="server") bindServer();
+  const lp=document.getElementById("lihatPer"); if(lp) lp.onchange=()=>gantiLihat(lp.value);
 }
 function go(v){ UI.view=v; render(); window.scrollTo(0,0); }
 function bindCommon(){
@@ -704,7 +724,7 @@ function bindTambah(){
 
 /* ---- rekap ---- */
 function viewRekap(){
-  const p=per(); const list=sasaranList(p); const pm=pantauMap(p);
+  const p=viewPer(); const list=sasaranList(p); const pm=pantauMap(p);
   const rs=list.map(s=>({s,r:pm[keyOf(s)]})).filter(x=>x.r);
   const n=rs.length;
   const group=(keyFn)=>{ const g={}; list.forEach(s=>{ const k=keyFn(s)||"-"; g[k]=g[k]||{n:0,d:0,m:0}; g[k].n++; const r=pm[keyOf(s)]; if(r){ g[k].d++; if(scoreOf(r)>=5) g[k].m++; } }); return Object.entries(g).sort((a,b)=>a[0].localeCompare(b[0])); };
@@ -802,10 +822,11 @@ function bindImpor(){
 /* ---- unduh ---- */
 function viewUnduh(){
   if(!isKoor()) return `<div class="card">Hanya koordinator yang dapat mengunduh file e-PPGBM.</div>`;
-  const p=per(); const {rows,dibuang,manual}=exportRows(p); const list=sasaranList(p);
+  const p=viewPer(); const {rows,dibuang,manual}=exportRows(p); const list=sasaranList(p);
   const belum=list.length-Object.keys(pantauMap(p)).filter(k=>list.some(s=>keyOf(s)===k)).length;
   return `
   <button class="btn sm" data-go="menu" style="align-self:flex-start">← Menu</button>
+  ${pilihPeriodeLihat()}
   <section class="card">
     <h2>Unduh Excel e-PPGBM · ${esc(periodeLabel(p))}</h2>
     <p class="small muted" style="margin:0">Format sama dengan template import MP-ASI: Sheet1, 13 kolom, semua sel teks, tanggal YYYY-MM-DD, isian 1/0.</p>
@@ -854,7 +875,7 @@ function viewAtur(){
   </section>`;
 }
 function bindAtur(){
-  const s=document.getElementById("aPer"); if(s) s.onchange=()=>{ DB.pengaturan.periode=s.value; markSet(); save(); toast("Periode aktif: "+periodeLabel(s.value)); render(); };
+  const s=document.getElementById("aPer"); if(s) s.onchange=()=>{ DB.pengaturan.periode=s.value; UI.lihatPer=null; markSet(); save(); toast("Periode aktif: "+periodeLabel(s.value)); render(); };
 }
 
 /* ---- cadangan ---- */
@@ -1072,8 +1093,8 @@ const ACT={
   },
   imporSimpan(){ const pv=UI.impor; commitImport(pv); UI.impor=null; toast(pv.lolos.length+" anak tersimpan sebagai sasaran"); go("beranda"); },
   imporBatal(){ UI.impor=null; UI.imporErr=null; render(); },
-  unduhEppgbm(){ try{ const p=per(); saveFile("MPASI_Moncongloe_"+p+".xlsx", buildEppgbmXlsx(p), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"); }catch(e){ toast("Gagal membuat file: "+e.message); } },
-  unduhRekap(){ try{ const p=per(); saveFile("rekap_MPASI_"+p+".xlsx", buildRekapXlsx(p), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"); }catch(e){ toast("Gagal membuat file: "+e.message); } },
+  unduhEppgbm(){ try{ const p=viewPer(); saveFile("MPASI_Moncongloe_"+p+".xlsx", buildEppgbmXlsx(p), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"); }catch(e){ toast("Gagal membuat file: "+e.message); } },
+  unduhRekap(){ try{ const p=viewPer(); saveFile("rekap_MPASI_"+p+".xlsx", buildRekapXlsx(p), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"); }catch(e){ toast("Gagal membuat file: "+e.message); } },
   cadSimpan(){ const x={aplikasi:"Pantau MP-ASI Moncongloe", versi:APP_VERSI, dibuat:new Date().toISOString(), oleh:me().nama, periode:per(), petugas:DB.petugas.map(u=>({id:u.id,nama:u.nama,peran:u.peran,pinHash:u.pinHash})), sasaran:DB.sasaran, pemantauan:DB.pemantauan};
     saveFile("cadangan_MPASI_"+me().nama.replace(/\W+/g,"_")+"_"+todayYmd()+".json", JSON.stringify(x), "application/json"); },
   async keluar(){ if(!(await ask("Keluar dari aplikasi? Data tetap tersimpan di perangkat ini.","Keluar"))) return; DB.sesi=null; save(); render(); },

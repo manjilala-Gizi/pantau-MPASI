@@ -2,7 +2,7 @@
 
 Aplikasi web (PWA) untuk mencatat pemantauan MP-ASI anak 6–23 bulan: recall 24 jam untuk 8 kelompok pangan dan intervensi. Hasilnya bisa diunduh sebagai Excel yang formatnya persis template import MP-ASI e-PPGBM.
 
-Versi 0.2 (uji coba). Data tersimpan di HP lalu disinkronkan ke Google Sheet puskesmas lewat Apps Script (lihat PANDUAN-APPS-SCRIPT.md).
+Versi 0.3 (uji coba). Data tersimpan di HP lalu disinkronkan ke Google Sheet puskesmas lewat Apps Script (lihat PANDUAN-APPS-SCRIPT.md).
 
 ## Isi folder
 
@@ -44,3 +44,7 @@ Versi 0.2 (uji coba). Data tersimpan di HP lalu disinkronkan ke Google Sheet pus
 - HP petugas: layar login → Sambungkan perangkat ini → tempel kode sambung dari koordinator.
 - Tanpa server pun aplikasi tetap bisa dipakai; pindahkan data lewat Menu → Cadangan data.
 - File .xls e-PPGBM yang sudah di-save ulang sebagai "Web Page" tidak bisa dibaca. Gunakan file asli dari e-PPGBM, atau save as .xlsx.
+
+## Melihat atau mengunduh periode lain (koordinator)
+
+Di **Rekap** dan **Unduh Excel e-PPGBM**, pilih periode lain di kotak **Periode yang ditampilkan**. Data periode itu diambil dari Google Sheet dan bisa diunduh, sementara periode kerja petugas tidak berubah. Data setiap periode tersimpan terpisah, jadi impor periode baru tidak menghapus data periode sebelumnya.
