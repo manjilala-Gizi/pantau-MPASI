@@ -58,7 +58,7 @@ h1,h2,h3{text-wrap:balance;margin:0;line-height:1.25}
 .brand{display:flex;flex-direction:column;min-width:0;flex:1}
 .brand b{font-size:16px;font-weight:800;letter-spacing:.2px}
 .brand small{font-size:12px;opacity:.85;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.sync{font-size:11.5px;font-weight:600;padding:4px 9px;border-radius:999px;background:rgba(255,255,255,.18);white-space:nowrap}
+.sync{font-size:11.5px;font-weight:700;padding:5px 10px;border-radius:999px;background:rgba(255,255,255,.18);white-space:nowrap;border:0;color:inherit;cursor:pointer}
 main{max-width:760px;margin:0 auto;padding:16px 16px 96px;display:flex;flex-direction:column;gap:14px}
 .tabbar{position:fixed;left:0;right:0;bottom:0;z-index:20;background:var(--surface);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px)}
 .tabbar-in{max-width:760px;margin:0 auto;display:grid;grid-template-columns:repeat(4,1fr)}
@@ -187,7 +187,7 @@ details summary{cursor:pointer;font-weight:700;font-size:13.5px}
 "use strict";
 
 /* ============ KONSTANTA ============ */
-const APP_VERSI = "0.1 (prototipe)";
+const APP_VERSI = "0.2 (uji coba)";
 const STORE_KEY = "mpasi_moncongloe_v1";
 const PUSKESMAS = "MONCONGLOE";
 const BULAN = ["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"];
@@ -238,18 +238,34 @@ function scoreOf(r){ return FOODS.reduce((a,f)=>a+(r[f.k]===1?1:0),0); }
 
 /* ============ PENYIMPANAN ============ */
 let storageOk = true;
-function blankDB(){ return {versi:1, pengaturan:{periode:defaultPeriode()}, petugas:[], sasaran:{}, pemantauan:{}, sesi:null, demo:false}; }
+function blankDB(){ return {versi:1, pengaturan:{periode:defaultPeriode(), waktu:""}, petugas:[], sasaran:{}, pemantauan:{}, sesi:null, demo:false, server:null, antri:{p:{},s:{},u:{},set:false}, lastSync:""}; }
 let DB = blankDB();
-function load(){ try{ const raw=localStorage.getItem(STORE_KEY); if(raw){ DB=Object.assign(blankDB(), JSON.parse(raw)); return true; } }catch(e){ storageOk=false; } return false; }
+function load(){ try{ const raw=localStorage.getItem(STORE_KEY); if(raw){ DB=Object.assign(blankDB(), JSON.parse(raw)); DB.antri=Object.assign({p:{},s:{},u:{},set:false}, DB.antri||{}); return true; } }catch(e){ storageOk=false; } return false; }
 function save(){ try{ localStorage.setItem(STORE_KEY, JSON.stringify(DB)); storageOk=true; }catch(e){ storageOk=false; } }
 
 /* ============ STATE UI ============ */
 const UI = { view:"beranda", q:"", desa:"", pos:"", status:"semua", formKey:null, draft:null, impor:null, imporErr:null, showErr:false };
-function me(){ return DB.petugas.find(p=>p.id===DB.sesi); }
+function me(){ return DB.petugas.find(p=>p.id===DB.sesi && p.aktif!==false); }
+function aktifPetugas(){ return DB.petugas.filter(u=>u.aktif!==false); }
 function isKoor(){ const u=me(); return u && u.peran==="koordinator"; }
 function per(){ return DB.pengaturan.periode; }
 function sasaranList(p){ return DB.sasaran[p||per()] || []; }
-function pantauMap(p){ const k=p||per(); if(!DB.pemantauan[k]) DB.pemantauan[k]={}; return DB.pemantauan[k]; }
+function rawPantau(p){ const k=p||per(); if(!DB.pemantauan[k]) DB.pemantauan[k]={}; return DB.pemantauan[k]; }
+function pantauMap(p){ const raw=rawPantau(p); const o={}; for(const k in raw) if(raw[k] && !raw[k].dihapus) o[k]=raw[k]; return o; }
+/* antrean data yang belum terkirim ke server */
+function isDemoKey(p,key){ const s=(DB.sasaran[p]||[]).find(x=>keyOf(x)===key); return !!(s&&s.demo); }
+function markP(p,key){ if(isDemoKey(p,key)) return; DB.antri.p[p+"|"+key]=Date.now(); scheduleSync(); }
+function markS(p,s){ if(s.demo) return; s.waktuUbah=new Date().toISOString(); DB.antri.s[p+"|"+keyOf(s)]=Date.now(); scheduleSync(); }
+function markU(u){ u.waktuUbah=new Date().toISOString(); DB.antri.u[u.id]=Date.now(); scheduleSync(); }
+function markSet(){ DB.pengaturan.waktu=new Date().toISOString(); DB.antri.set=true; scheduleSync(); }
+function pendingCount(){ const a=DB.antri; return Object.keys(a.p).length+Object.keys(a.s).length+Object.keys(a.u).length+(a.set?1:0); }
+function markAllLocal(){
+  for(const p of Object.keys(DB.sasaran)) for(const s of DB.sasaran[p]) if(!s.demo){ s.waktuUbah=s.waktuUbah||new Date().toISOString(); DB.antri.s[p+"|"+keyOf(s)]=Date.now(); }
+  for(const p of Object.keys(DB.pemantauan)) for(const k of Object.keys(DB.pemantauan[p])) if(!isDemoKey(p,k)) DB.antri.p[p+"|"+k]=Date.now();
+  for(const u of DB.petugas){ u.waktuUbah=u.waktuUbah||new Date().toISOString(); DB.antri.u[u.id]=Date.now(); }
+  if(!DB.pengaturan.waktu) DB.pengaturan.waktu=new Date().toISOString();
+  DB.antri.set=true;
+}
 function keyOf(s){ return s.nik ? s.nik : ("N:"+s.nama+"|"+s.tglLahir); }
 
 /* ============ DATA CONTOH ============ */
@@ -351,7 +367,7 @@ function commitImport(pv){
   const p=pv.p; const list=sasaranList(p).slice(); const pos=new Map(list.map((s,i)=>[keyOf(s),i]));
   for(const r of pv.lolos){ const s={nik:r.nik, nama:r.nama, jk:r.jk, tglLahir:r.tglLahir, namaOrtu:r.namaOrtu, desa:r.desa, posyandu:r.posyandu, bbu:r.bbu, tbu:r.tbu, bbtb:r.bbtb, tglUkur:r.tglUkur, sumber:"impor"};
     const k=keyOf(s); if(pos.has(k)) list[pos.get(k)]=Object.assign({},list[pos.get(k)],s); else { pos.set(k,list.length); list.push(s); } }
-  DB.sasaran[p]=list; DB.lastImport={waktu:new Date().toISOString(), jumlah:pv.lolos.length, oleh:me()?me().nama:""};
+  DB.sasaran[p]=list; pv.lolos.forEach(r=>{ const k=r.nik?r.nik:("N:"+r.nama+"|"+r.tglLahir); const s=list[pos.get(k)]; if(s) markS(p,s); }); DB.lastImport={waktu:new Date().toISOString(), jumlah:pv.lolos.length, oleh:me()?me().nama:""};
   save();
 }
 
@@ -436,14 +452,15 @@ function render(){
     case "unduh": body=viewUnduh(); break;
     case "atur": body=viewAtur(); break;
     case "cadangan": body=viewCadangan(); break;
+    case "server": body=viewServer(); break;
     default: body=viewBeranda();
   }
   const tabs=[["beranda","Beranda",IC.home],["sasaran","Sasaran",IC.list],["rekap","Rekap",IC.chart],["menu","Menu",IC.menu]];
-  const curTab = ["form","tambah"].includes(UI.view)?"sasaran": ["impor","unduh","atur","cadangan"].includes(UI.view)?"menu":UI.view;
+  const curTab = ["form","tambah"].includes(UI.view)?"sasaran": ["impor","unduh","atur","cadangan","server"].includes(UI.view)?"menu":UI.view;
   $app.innerHTML=`
   <header class="topbar"><div class="topbar-in">
     <div class="brand"><b>Pantau MP-ASI</b><small>Pkm ${esc(PUSKESMAS)} · ${esc(periodeLabel(p))} · ${esc(u.nama)}</small></div>
-    <span class="sync" title="Tahap 1: data tersimpan di perangkat ini">Mode lokal</span>
+    <button class="sync" data-act="syncNow" title="Status sinkron. Ketuk untuk sinkron sekarang.">${esc(chipLabel())}</button>
   </div></header>
   <main>${!storageOk?`<div class="banner err"><div><b>Penyimpanan perangkat tidak tersedia.</b> Data hanya bertahan selama halaman ini terbuka. Gunakan menu Cadangan untuk menyimpan.</div></div>`:""}${body}</main>
   <nav class="tabbar" aria-label="Navigasi utama"><div class="tabbar-in">
@@ -456,6 +473,7 @@ function render(){
   if(UI.view==="tambah") bindTambah();
   if(UI.view==="atur") bindAtur();
   if(UI.view==="cadangan") bindCadangan();
+  if(UI.view==="server") bindServer();
 }
 function go(v){ UI.view=v; render(); window.scrollTo(0,0); }
 function bindCommon(){
@@ -466,7 +484,7 @@ function bindCommon(){
 
 /* ---- login ---- */
 function renderLogin(){
-  const users=DB.petugas;
+  const users=aktifPetugas();
   const defaultPin = users.length===1 && users[0].pinDefault;
   $app.innerHTML=`<div class="login"><div class="card">
     <div class="row"><div class="logo">${IC.bowl}</div><div><h1 style="font-size:20px;font-weight:800">Pantau MP-ASI</h1><div class="muted small">Puskesmas Moncongloe · Kab. Maros</div></div></div>
@@ -476,9 +494,10 @@ function renderLogin(){
     <div id="lgE" class="small" style="color:var(--danger)" hidden></div>
     <button class="btn primary block" id="lgB">Masuk</button>
     ${defaultPin?`<div class="banner info"><div>PIN awal Koordinator: <b>1234</b>. Ganti di menu <b>Periode &amp; Petugas</b> setelah masuk.</div></div>`:""}
-    <div class="small muted">Versi ${APP_VERSI}</div>
+    <div class="spread small"><span class="muted">Versi ${APP_VERSI}</span>${DB.server?`<span class="tag green">Tersambung ke server</span>`:`<button class="btn sm" id="lgS">Sambungkan perangkat ini</button>`}</div>
   </div></div>`;
-  const doLogin=async()=>{ const id=document.getElementById("lgU").value; const pin=document.getElementById("lgP").value.trim(); const u=DB.petugas.find(x=>x.id===id);
+  const ls=document.getElementById("lgS"); if(ls) ls.onclick=connectDevice;
+  const doLogin=async()=>{ const id=document.getElementById("lgU").value; const pin=document.getElementById("lgP").value.trim(); const u=aktifPetugas().find(x=>x.id===id);
     const e=document.getElementById("lgE");
     if(!u || (await hashPin(pin))!==u.pinHash){ e.textContent="PIN salah. Coba lagi."; e.hidden=false; return; }
     DB.sesi=u.id; save(); UI.view="beranda"; render(); };
@@ -563,7 +582,7 @@ function viewSasaran(){
       <span class="score ${r?(sc>=5?"done":"low"):"todo"}">${r?sc+"/8":"Belum"}</span>
       <span class="who"><span class="nm">${esc(s.nama)}</span>
         <span class="meta">${esc(s.jk||"-")} · ${umur!=null?umur+" bln":"usia ?"} · ${esc(s.posyandu||"-")}${s.namaOrtu?" · "+esc(s.namaOrtu):""}</span>
-        ${riskTags(s)||outAge(s)?`<span class="row" style="gap:4px">${outAge(s)?`<span class="tag grey">${umur<6?"Belum 6 bln hari ini":"Sudah 24 bln hari ini"}</span> `:""}${riskTags(s)}</span>`:""}
+        ${riskTags(s)||outAge(s)||(r&&r.catatan)?`<span class="row" style="gap:4px">${r&&r.catatan?`<span class="tag amber">Diisi ganda</span> `:""}${outAge(s)?`<span class="tag grey">${umur<6?"Belum 6 bln hari ini":"Sudah 24 bln hari ini"}</span> `:""}${riskTags(s)}</span>`:""}
       </span></button>`; }).join("")}</div>
     ${list.length>shown.length?`<p class="small muted">Menampilkan 300 dari ${list.length}. Persempit dengan pencarian atau filter.</p>`:""}`
     :`<div class="card"><p class="muted small" style="margin:0">Tidak ada anak yang cocok dengan filter ini.</p></div>`)
@@ -613,7 +632,7 @@ function viewForm(){
     <div class="small muted num">NIK ${esc(s.nik||"-")} · ${esc(s.jk==="L"?"Laki-laki":s.jk==="P"?"Perempuan":"-")} · lahir ${esc(fmtDate(s.tglLahir))} · <b style="color:var(--ink)">${umur!=null?umur+" bulan":"-"}</b></div>
     <div class="small muted">${esc(s.desa)} · Posyandu ${esc(s.posyandu||"-")}${s.namaOrtu?" · Ortu: "+esc(s.namaOrtu):""}</div>
     ${(s.tbu||s.bbtb)?`<div class="row small" style="gap:6px"><span class="tag grey">BB/U ${esc(s.bbu||"-")}</span><span class="tag grey">TB/U ${esc(s.tbu||"-")}</span><span class="tag grey">BB/TB ${esc(s.bbtb||"-")}</span></div>`:""}
-    ${old?`<div class="banner info small"><div>Sudah diisi oleh <b>${esc(old.petugas)}</b>, ${esc(new Date(old.waktuUbah).toLocaleString("id-ID",{dateStyle:"medium",timeStyle:"short"}))}. Perubahan akan menimpa isian ini.</div></div>`:""}
+    ${old?`<div class="banner info small"><div>Sudah diisi oleh <b>${esc(old.petugas)}</b>, ${esc(new Date(old.waktuUbah).toLocaleString("id-ID",{dateStyle:"medium",timeStyle:"short"}))}. Perubahan akan menimpa isian ini.${old.catatan?`<br><b>${esc(old.catatan)}</b>`:""}</div></div>`:""}
   </section>
   <section class="card">
     <label class="f" for="fTgl">Tanggal monitoring<input type="date" id="fTgl" value="${esc(d.tgl)}" min="${start}" max="${end}"></label>
@@ -734,13 +753,14 @@ function viewMenu(){
     ${it("impor","Impor data sasaran","Unggah file Daftar Anak Status Gizi dari e-PPGBM")}
     ${it("unduh","Unduh Excel e-PPGBM","File siap unggah, format template import MP-ASI")}
     ${it("atur","Periode &amp; petugas","Ganti periode aktif, tambah petugas, ganti PIN")}
+    ${it("server","Sambungan server",DB.server?"Tersambung ke Google Sheet · kode sambung untuk HP petugas":"Belum tersambung · hubungkan ke Google Sheet puskesmas")}
   </div>`:""}
   <div class="eyebrow">Umum</div><div class="list">
     ${it("tambah","Tambah anak manual","Anak 6–23 bulan yang tidak ada di file impor")}
     ${it("cadangan","Cadangan data","Simpan atau pulihkan data sebagai file")}
     <button class="item" data-act="keluar"><span class="who"><span class="nm">Keluar</span><span class="meta">Masuk sebagai ${esc(me().nama)}</span></span></button>
   </div>
-  <p class="small muted">Pantau MP-ASI versi ${APP_VERSI}. Tahap 1: data tersimpan di perangkat ini. Sinkron Google Sheet menyusul di tahap 2.</p>`;
+  <p class="small muted">Pantau MP-ASI versi ${APP_VERSI}. ${DB.server?"Data disinkronkan ke Google Sheet puskesmas.":"Perangkat ini belum tersambung ke server; data hanya ada di perangkat ini."}</p>`;
 }
 
 /* ---- impor ---- */
@@ -820,7 +840,7 @@ function viewAtur(){
   </section>
   <section class="card">
     <h2>Petugas</h2>
-    <div class="list">${DB.petugas.map(u=>`<div class="item" style="cursor:default"><span class="who"><span class="nm">${esc(u.nama)}</span><span class="meta">${u.peran==="koordinator"?"Koordinator":"Petugas gizi"}${u.pinDefault?" · PIN masih 1234":""}</span></span>
+    <div class="list">${aktifPetugas().map(u=>`<div class="item" style="cursor:default"><span class="who"><span class="nm">${esc(u.nama)}</span><span class="meta">${u.peran==="koordinator"?"Koordinator":"Petugas gizi"}${u.pinDefault?" · PIN masih 1234":""}</span></span>
       <button class="btn sm" data-act="gantiPin" data-id="${esc(u.id)}">Ganti PIN</button>${u.id!==DB.sesi?`<button class="btn sm danger" data-act="hapusPetugas" data-id="${esc(u.id)}">Hapus</button>`:""}</div>`).join("")}</div>
     <div class="stack"><span class="small muted" style="font-weight:700">Tambah petugas</span>
       <div class="grid2"><input type="text" id="aNama" placeholder="Nama petugas"><input type="password" id="aPin" inputmode="numeric" maxlength="8" placeholder="PIN 4–8 angka"></div>
@@ -834,7 +854,7 @@ function viewAtur(){
   </section>`;
 }
 function bindAtur(){
-  const s=document.getElementById("aPer"); if(s) s.onchange=()=>{ DB.pengaturan.periode=s.value; save(); toast("Periode aktif: "+periodeLabel(s.value)); render(); };
+  const s=document.getElementById("aPer"); if(s) s.onchange=()=>{ DB.pengaturan.periode=s.value; markSet(); save(); toast("Periode aktif: "+periodeLabel(s.value)); render(); };
 }
 
 /* ---- cadangan ---- */
@@ -860,13 +880,157 @@ function bindCadangan(){
       let nS=0,nP=0,nU=0;
       const adaReal=Object.values(x.sasaran).some(l=>(l||[]).some(s=>!s.demo));
       if(adaReal && DB.demo) clearDemo();
-      (x.petugas||[]).forEach(u=>{ if(u && u.id && !DB.petugas.some(v=>v.id===u.id) && !DB.petugas.some(v=>v.nama.toLowerCase()===String(u.nama).toLowerCase())){ DB.petugas.push({id:u.id,nama:u.nama,peran:u.peran,pinHash:u.pinHash}); nU++; } });
+      (x.petugas||[]).forEach(u=>{ if(u && u.id && !DB.petugas.some(v=>v.id===u.id) && !DB.petugas.some(v=>v.nama.toLowerCase()===String(u.nama).toLowerCase())){ const nu={id:u.id,nama:u.nama,peran:u.peran,pinHash:u.pinHash}; DB.petugas.push(nu); markU(nu); nU++; } });
       if(x.periode && /^\d{4}-\d{2}$/.test(x.periode)) DB.pengaturan.periode=x.periode;
       for(const p of Object.keys(x.sasaran)){ const cur=DB.sasaran[p]||[]; const pos=new Map(cur.map((s,i)=>[keyOf(s),i]));
-        for(const s of x.sasaran[p]){ if(s.demo) continue; const k=keyOf(s); if(!pos.has(k)){ pos.set(k,cur.length); cur.push(s); nS++; } } DB.sasaran[p]=cur; }
-      for(const p of Object.keys(x.pemantauan)){ const cur=pantauMap(p); for(const [k,r] of Object.entries(x.pemantauan[p])){ if(!cur[k] || (r.waktuUbah||"")>(cur[k].waktuUbah||"")){ cur[k]=r; nP++; } } }
+        for(const s of x.sasaran[p]){ if(s.demo) continue; const k=keyOf(s); if(!pos.has(k)){ pos.set(k,cur.length); cur.push(s); nS++; markS(p,s); } } DB.sasaran[p]=cur; }
+      for(const p of Object.keys(x.pemantauan)){ const cur=rawPantau(p); for(const [k,r] of Object.entries(x.pemantauan[p])){ if(!cur[k] || (r.waktuUbah||"")>(cur[k].waktuUbah||"")){ cur[k]=r; nP++; markP(p,k); } } }
       save(); toast(nS+" anak baru, "+nP+" isian digabung"+(nU?", "+nU+" petugas ditambahkan":"")); render(); }
     catch(e){ toast("Gagal: "+(e.message||e)); } };
+}
+
+/* ============ SINKRON GOOGLE SHEET ============ */
+const SYNC={busy:false, err:"", timer:null};
+function chipLabel(){
+  if(!DB.server) return "Mode lokal";
+  if(SYNC.busy) return "Menyinkron…";
+  const n=pendingCount();
+  if(!navigator.onLine) return n? "Offline · "+n+" antre" : "Offline";
+  if(SYNC.err) return n? "Gagal · "+n+" antre" : "Gagal sinkron";
+  if(n) return n+" belum terkirim";
+  if(DB.lastSync){ const d=new Date(DB.lastSync); return "Tersinkron "+pad(d.getHours())+"."+pad(d.getMinutes()); }
+  return "Belum sinkron";
+}
+function chip(){ const c=document.querySelector(".sync"); if(c) c.textContent=chipLabel(); }
+function softRender(){ const a=document.activeElement; if(a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName) && a.type!=="file") { chip(); return; } if($ov.innerHTML) { chip(); return; } if(UI.view==="form"){ chip(); return; } render(); }
+function scheduleSync(ms){ if(!DB.server) return; clearTimeout(SYNC.timer); SYNC.timer=setTimeout(()=>sync(), ms||2500); }
+function kodeSambung(){ if(!DB.server) return ""; return "MPASI1."+btoa(unescape(encodeURIComponent(JSON.stringify({u:DB.server.url,t:DB.server.token})))); }
+function bacaKode(k){ k=(k||"").trim(); if(!k.startsWith("MPASI1.")) throw new Error("Kode sambung tidak dikenali. Minta kode terbaru ke koordinator.");
+  const o=JSON.parse(decodeURIComponent(escape(atob(k.slice(7))))); if(!o.u||!o.t) throw new Error("Kode sambung tidak lengkap."); return {url:o.u, token:o.t}; }
+async function api(action, extra, srv){
+  srv=srv||DB.server; let res;
+  try{ res=await fetch(srv.url,{method:"POST", headers:{"Content-Type":"text/plain;charset=utf-8"}, body:JSON.stringify(Object.assign({action, token:srv.token, oleh:me()?me().nama:""}, extra||{}))}); }
+  catch(e){ throw new Error(navigator.onLine? "Tidak bisa menghubungi server. Periksa URL aplikasi web (harus berakhiran /exec)." : "Tidak ada sinyal internet."); }
+  let j; try{ j=await res.json(); }catch(e){ throw new Error("Jawaban server tidak terbaca. Pastikan deployment Apps Script diatur: Jalankan sebagai Saya, akses Siapa saja."); }
+  if(!j.ok) throw new Error(j.error||"Server menolak permintaan."); return j;
+}
+const splitKey=k=>{ const i=k.indexOf("|"); return [k.slice(0,i), k.slice(i+1)]; };
+async function sync(manual){
+  if(!DB.server || SYNC.busy) return;
+  if(!navigator.onLine){ chip(); if(manual) toast("Tidak ada sinyal. Data tetap tersimpan dan akan dikirim nanti."); return; }
+  SYNC.busy=true; SYNC.err=""; chip();
+  try{
+    const a=DB.antri; const snapP=Object.assign({},a.p), snapS=Object.assign({},a.s), snapU=Object.assign({},a.u), snapSet=a.set, snapW=DB.pengaturan.waktu;
+    const sas=[], pem=[];
+    for(const k of Object.keys(snapS)){ const [p,key]=splitKey(k); const x=(DB.sasaran[p]||[]).find(y=>keyOf(y)===key); if(x && !x.demo) sas.push(Object.assign({periode:p, key}, x)); }
+    for(const k of Object.keys(snapP)){ const [p,key]=splitKey(k); const r=(DB.pemantauan[p]||{})[key]; const x=(DB.sasaran[p]||[]).find(y=>keyOf(y)===key);
+      if(r && !(x && x.demo)) pem.push(Object.assign({periode:p, key, nik:x?x.nik:"", nama:x?x.nama:""}, r)); }
+    const ptg=Object.keys(snapU).map(id=>DB.petugas.find(u=>u.id===id)).filter(Boolean).map(u=>({id:u.id, nama:u.nama, peran:u.peran, pinHash:u.pinHash, aktif:u.aktif!==false, waktuUbah:u.waktuUbah}));
+    const setg=snapSet? {periode:DB.pengaturan.periode, periodeWaktu:DB.pengaturan.waktu||""} : null;
+    if(sas.length||pem.length||ptg.length||setg){
+      const CH=250; const n=Math.max(sas.length, pem.length, 1);
+      for(let i=0;i<n;i+=CH) await api("push", {sasaran:sas.slice(i,i+CH), pemantauan:pem.slice(i,i+CH), petugas:i===0?ptg:[], pengaturan:i===0?setg:null});
+      for(const k in snapP) if(a.p[k]===snapP[k]) delete a.p[k];
+      for(const k in snapS) if(a.s[k]===snapS[k]) delete a.s[k];
+      for(const k in snapU) if(a.u[k]===snapU[k]) delete a.u[k];
+      if(snapSet && DB.pengaturan.waktu===snapW) a.set=false;
+      save();
+    }
+    await pullMerge(per(), 0);
+    DB.lastSync=new Date().toISOString(); save();
+    if(manual) toast("Sinkron selesai");
+  }catch(e){ SYNC.err=e.message||String(e); if(manual) toast(SYNC.err); }
+  finally{ SYNC.busy=false; softRender(); }
+}
+async function pullMerge(p, depth){
+  const j=await api("pull", {periode:p});
+  const sp=j.pengaturan||{};
+  if(sp.periode && !DB.antri.set && sp.periode!==DB.pengaturan.periode){ DB.pengaturan.periode=sp.periode; DB.pengaturan.waktu=sp.periodeWaktu||""; if(!depth) return pullMerge(sp.periode, 1); }
+  for(const u of j.petugas||[]){ if(DB.antri.u[u.id]) continue; const i=DB.petugas.findIndex(x=>x.id===u.id);
+    const o={id:u.id, nama:u.nama, peran:u.peran, pinHash:u.pinHash, aktif:u.aktif!==false, waktuUbah:u.waktuUbah};
+    if(i<0) DB.petugas.push(o); else { const keepDef=DB.petugas[i].pinDefault && DB.petugas[i].pinHash===u.pinHash; DB.petugas[i]=Object.assign({}, DB.petugas[i], o); if(!keepDef) delete DB.petugas[i].pinDefault; } }
+  const srvS=j.sasaran||[];
+  if(srvS.length && DB.demo) clearDemo();
+  const local=DB.sasaran[p]||[]; const out=[]; const seen=new Set(); const srvMap=new Map(srvS.map(x=>[x.key,x]));
+  for(const x of local){ const k=keyOf(x); seen.add(k);
+    if(DB.antri.s[p+"|"+k] || !srvMap.has(k)) out.push(x);
+    else { const o=Object.assign({}, srvMap.get(k)); delete o.key; out.push(o); } }
+  for(const x of srvS){ if(!seen.has(x.key)){ const o=Object.assign({}, x); delete o.key; out.push(o); } }
+  DB.sasaran[p]=out;
+  const raw=rawPantau(p);
+  for(const r of j.pemantauan||[]){ const k=r.key; if(DB.antri.p[p+"|"+k]) continue; const o=Object.assign({}, r); delete o.key;
+    if(!raw[k] || (o.waktuUbah||"")>=(raw[k].waktuUbah||"") || (o.catatan||"")!==(raw[k].catatan||"")) raw[k]=o; }
+}
+function localKosong(){
+  const adaS=Object.values(DB.sasaran).some(l=>(l||[]).some(x=>!x.demo));
+  const adaP=Object.keys(DB.pemantauan).some(p=>Object.keys(DB.pemantauan[p]).some(k=>!isDemoKey(p,k)));
+  const hanyaDefault=DB.petugas.length<=1 && (!DB.petugas[0] || DB.petugas[0].pinDefault);
+  return !adaS && !adaP && hanyaDefault;
+}
+async function hubungkan(srv){
+  await api("ping", {}, srv);
+  const kosong=localKosong();
+  DB.server=srv; DB.lastSync=""; SYNC.err="";
+  if(kosong){ const cur=me(); clearDemo(); DB.petugas=[]; DB.antri={p:{},s:{},u:{},set:false}; DB.sesi=null;
+    await pullMerge(DB.pengaturan.periode, 0);
+    if(!DB.petugas.length){ // server masih kosong: perangkat ini yang pertama
+      DB.petugas=[cur || {id:uid(), nama:"Koordinator", peran:"koordinator", pinHash:await hashPin("1234"), pinDefault:true}]; DB.sesi=cur?cur.id:null; markAllLocal(); }
+    DB.lastSync=new Date().toISOString(); save(); if(pendingCount()) await sync(); return "baru"; }
+  markAllLocal(); save(); await sync(); return "gabung";
+}
+function connectDevice(){
+  $ov.innerHTML=`<div class="modal-bg" role="dialog" aria-modal="true"><div class="modal">
+    <b>Sambungkan perangkat ini</b>
+    <p class="small muted" style="margin:0">Tempel <b>kode sambung</b> yang dikirim koordinator (diawali MPASI1.). Setelah tersambung, daftar sasaran dan akun petugas akan diunduh.</p>
+    <textarea id="kIn" rows="4" placeholder="MPASI1.xxxx" style="font-size:13px"></textarea>
+    <div id="kErr" class="small" style="color:var(--danger)" hidden></div>
+    <div class="row" style="justify-content:flex-end"><button class="btn" id="mNo">Batal</button><button class="btn primary" id="mOk">Sambungkan</button></div></div></div>`;
+  document.getElementById("mNo").onclick=()=>$ov.innerHTML="";
+  document.getElementById("mOk").onclick=async()=>{ const b=document.getElementById("mOk"), e=document.getElementById("kErr");
+    try{ b.disabled=true; b.textContent="Menghubungkan…"; e.hidden=true; const srv=bacaKode(document.getElementById("kIn").value); const hs=await hubungkan(srv);
+      $ov.innerHTML=""; toast(hs==="baru"?"Tersambung. Silakan masuk dengan nama dan PIN Anda.":"Tersambung dan data perangkat ini dikirim."); render(); }
+    catch(err){ e.textContent=err.message||String(err); e.hidden=false; b.disabled=false; b.textContent="Sambungkan"; } };
+}
+function viewServer(){
+  if(!isKoor()) return `<div class="card">Hanya koordinator.</div>`;
+  const srv=DB.server;
+  if(!srv) return `
+  <button class="btn sm" data-go="menu" style="align-self:flex-start">← Menu</button>
+  <section class="card">
+    <h2>Sambungkan ke Google Sheet</h2>
+    <p class="small muted" style="margin:0">Isi dengan URL aplikasi web dan token dari Apps Script (lihat panduan pemasangan). Setelah tersambung, semua data di perangkat ini dikirim ke Google Sheet.</p>
+    <label class="f" for="sUrl">URL aplikasi web<input type="text" id="sUrl" placeholder="https://script.google.com/macros/s/…/exec" autocomplete="off"></label>
+    <label class="f" for="sTok">Token<input type="text" id="sTok" autocomplete="off" placeholder="24 karakter dari Apps Script"></label>
+    <div id="sErr" class="banner err" hidden></div>
+    <button class="btn primary" id="sBtn">Uji dan sambungkan</button>
+    <p class="small muted" style="margin:0">Sinkron hanya berjalan di aplikasi yang dipasang dari GitHub Pages. Halaman pratinjau di Claude tidak bisa menghubungi server luar.</p>
+  </section>`;
+  const n=pendingCount();
+  return `
+  <button class="btn sm" data-go="menu" style="align-self:flex-start">← Menu</button>
+  <section class="card">
+    <div class="spread"><h2>Sambungan server</h2><span class="tag ${SYNC.err?"red":n?"amber":"green"}">${SYNC.err?"Ada masalah":n?n+" belum terkirim":"Tersinkron"}</span></div>
+    <div class="small muted" style="overflow-wrap:anywhere">${esc(srv.url)}</div>
+    <div class="small">Sinkron terakhir: <b>${DB.lastSync?esc(new Date(DB.lastSync).toLocaleString("id-ID",{dateStyle:"medium",timeStyle:"short"})):"belum pernah"}</b></div>
+    ${SYNC.err?`<div class="banner err"><div>${esc(SYNC.err)}</div></div>`:""}
+    <button class="btn primary" data-act="syncNow">Sinkron sekarang</button>
+  </section>
+  <section class="card">
+    <h2>Kode sambung untuk HP petugas</h2>
+    <p class="small muted" style="margin:0">Kirim kode ini ke tiap petugas lewat <b>pesan pribadi</b> (bukan grup). Di HP petugas: buka aplikasi → <b>Sambungkan perangkat ini</b> → tempel kode. Siapa pun yang memegang kode ini bisa membaca data anak, jadi jangan disebar.</p>
+    <textarea id="kodeS" rows="4" readonly style="font-size:12px">${esc(kodeSambung())}</textarea>
+    <button class="btn" data-act="salinKode">Salin kode sambung</button>
+  </section>
+  <section class="card"><button class="btn danger" data-act="putuskan">Putuskan sambungan perangkat ini</button></section>`;
+}
+function bindServer(){
+  const b=document.getElementById("sBtn"); if(!b) return;
+  b.onclick=async()=>{ const url=document.getElementById("sUrl").value.trim(), token=document.getElementById("sTok").value.trim(), e=document.getElementById("sErr");
+    if(!/^https:\/\/script\.google\.com\/.+\/exec$/.test(url)){ e.innerHTML="<div>URL harus diawali https://script.google.com/ dan berakhiran /exec.</div>"; e.hidden=false; return; }
+    if(token.length<10){ e.innerHTML="<div>Isi token dari Apps Script.</div>"; e.hidden=false; return; }
+    b.disabled=true; b.textContent="Menghubungkan…";
+    try{ await hubungkan({url, token}); toast("Tersambung ke Google Sheet"); render(); }
+    catch(err){ e.innerHTML="<div>"+esc(err.message||String(err))+"</div>"; e.hidden=false; b.disabled=false; b.textContent="Uji dan sambungkan"; } };
 }
 
 /* ============ AKSI ============ */
@@ -874,15 +1038,15 @@ const ACT={
   simpan(){
     const s=sasaranList().find(x=>keyOf(x)===UI.formKey); const d=UI.draft; const P=formProblems(s,d);
     if(P.length){ UI.showErr=true; keepScroll(); toast(P[0]); return; }
-    const u=me(); const pm=pantauMap(); const old=pm[UI.formKey]; const now=new Date().toISOString();
+    const u=me(); const pm=pantauMap(); const old=pm[UI.formKey]; const now=new Date().toISOString(); const raw=rawPantau(); const prev=raw[UI.formKey];
     const rec={tgl:d.tgl, intervensi:d.intervensi, jenis:d.intervensi?d.jenis:[], lainnya:d.intervensi&&(d.jenis||[]).includes("Lainnya")?(d.lainnya||""):"",
-      petugas:u.nama, petugasId:u.id, waktuInput:old?old.waktuInput:now, waktuUbah:now};
-    FOODS.forEach(f=>rec[f.k]=d[f.k]); pm[UI.formKey]=rec; save();
+      petugas:u.nama, petugasId:u.id, waktuInput:old?old.waktuInput:now, waktuUbah:now, catatan:prev&&!prev.dihapus?(prev.catatan||""):""};
+    FOODS.forEach(f=>rec[f.k]=d[f.k]); raw[UI.formKey]=rec; markP(per(),UI.formKey); save();
     toast("Tersimpan: "+s.nama+" ("+scoreOf(rec)+"/8)"); UI.formKey=null; UI.draft=null; go("sasaran");
   },
   async hapusIsian(){ const s=sasaranList().find(x=>keyOf(x)===UI.formKey);
     if(!(await ask(`Hapus isian pemantauan <b>${esc(s.nama)}</b>? Anak tetap ada di daftar sasaran.`,"Hapus isian",true))) return;
-    delete pantauMap()[UI.formKey]; save(); toast("Isian dihapus"); go("sasaran"); },
+    const raw=rawPantau(); raw[UI.formKey]=Object.assign({},raw[UI.formKey],{dihapus:true,waktuUbah:new Date().toISOString(),petugas:me().nama,petugasId:me().id}); markP(per(),UI.formKey); save(); toast("Isian dihapus"); go("sasaran"); },
   tambahSimpan(){
     const t=UI.tambah||{}; const e=[]; const nik=(t.nik||"").trim(); const nama=clean(t.nama);
     if(!nikOk(nik)) e.push("NIK harus 16 angka.");
@@ -896,7 +1060,7 @@ const ACT={
     const box=document.getElementById("tErr");
     if(e.length){ box.innerHTML="<div>"+e.map(esc).join("<br>")+"</div>"; box.hidden=false; return; }
     const s={nik, nama, jk:t.jk, tglLahir:t.tglLahir, namaOrtu:clean(t.namaOrtu), desa:t.desa, posyandu:clean(t.posyandu).toUpperCase(), bbu:"", tbu:"", bbtb:"", sumber:"manual", dibuatOleh:me().nama};
-    DB.sasaran[per()]=sasaranList().concat([s]); save(); UI.tambah=null; toast("Anak ditambahkan"); openForm(keyOf(s));
+    DB.sasaran[per()]=sasaranList().concat([s]); markS(per(),s); save(); UI.tambah=null; toast("Anak ditambahkan"); openForm(keyOf(s));
   },
   imporSimpan(){ const pv=UI.impor; commitImport(pv); UI.impor=null; toast(pv.lolos.length+" anak tersimpan sebagai sasaran"); go("beranda"); },
   imporBatal(){ UI.impor=null; UI.imporErr=null; render(); },
@@ -907,18 +1071,23 @@ const ACT={
   async keluar(){ if(!(await ask("Keluar dari aplikasi? Data tetap tersimpan di perangkat ini.","Keluar"))) return; DB.sesi=null; save(); render(); },
   async tambahPetugas(){ const n=clean(document.getElementById("aNama").value); const pin=document.getElementById("aPin").value.trim(); const k=document.getElementById("aKoor").checked;
     if(!n) return toast("Isi nama petugas"); if(!/^\d{4,8}$/.test(pin)) return toast("PIN harus 4–8 angka");
-    if(DB.petugas.some(u=>u.nama.toLowerCase()===n.toLowerCase())) return toast("Nama sudah ada");
-    DB.petugas.push({id:uid(), nama:n, peran:k?"koordinator":"petugas", pinHash:await hashPin(pin)}); save(); toast("Petugas ditambahkan"); render(); },
+    if(aktifPetugas().some(u=>u.nama.toLowerCase()===n.toLowerCase())) return toast("Nama sudah ada");
+    const nu={id:uid(), nama:n, peran:k?"koordinator":"petugas", pinHash:await hashPin(pin)}; DB.petugas.push(nu); markU(nu); save(); toast("Petugas ditambahkan"); render(); },
   async hapusPetugas(b){ const u=DB.petugas.find(x=>x.id===b.dataset.id); if(!u) return;
     if(!(await ask(`Hapus petugas <b>${esc(u.nama)}</b>? Isian yang sudah dibuat tetap tersimpan.`,"Hapus",true))) return;
-    DB.petugas=DB.petugas.filter(x=>x.id!==u.id); save(); render(); },
+    u.aktif=false; markU(u); save(); render(); },
   async gantiPin(b){ const u=DB.petugas.find(x=>x.id===b.dataset.id); if(!u) return;
     $ov.innerHTML=`<div class="modal-bg"><div class="modal"><b>PIN baru untuk ${esc(u.nama)}</b><input type="password" id="nPin" inputmode="numeric" maxlength="8" placeholder="4–8 angka"><div class="row" style="justify-content:flex-end"><button class="btn" id="mNo">Batal</button><button class="btn primary" id="mOk">Simpan PIN</button></div></div></div>`;
     document.getElementById("nPin").focus();
     document.getElementById("mNo").onclick=()=>$ov.innerHTML="";
     document.getElementById("mOk").onclick=async()=>{ const pin=document.getElementById("nPin").value.trim(); if(!/^\d{4,8}$/.test(pin)) return toast("PIN harus 4–8 angka");
-      u.pinHash=await hashPin(pin); delete u.pinDefault; save(); $ov.innerHTML=""; toast("PIN diganti"); render(); }; },
+      u.pinHash=await hashPin(pin); delete u.pinDefault; markU(u); save(); $ov.innerHTML=""; toast("PIN diganti"); render(); }; },
   async hapusDemo(){ if(!(await ask("Hapus semua data contoh?","Hapus",true))) return; clearDemo(); save(); render(); },
+  syncNow(){ if(!DB.server){ toast(isKoor()?"Belum tersambung. Buka Menu → Sambungan server.":"Perangkat ini belum tersambung ke server."); return; } sync(true); },
+  async putuskan(){ if(!(await ask("Putuskan sambungan perangkat ini dari server? Data di perangkat tetap ada, tapi tidak lagi dikirim.","Putuskan",true))) return; DB.server=null; save(); render(); },
+  salinKode(){ const k=kodeSambung(); const el=document.getElementById("kodeS");
+    const fallback=()=>{ if(el){ el.focus(); el.select(); } toast("Kode dipilih. Salin secara manual."); };
+    try{ navigator.clipboard.writeText(k).then(()=>toast("Kode sambung disalin"),fallback); }catch(e){ fallback(); } },
   muatDemo(){ if(sasaranList().some(s=>!s.demo)){ toast("Periode ini sudah berisi data sungguhan"); return; } seedDemo(); save(); render(); }
 };
 
@@ -928,6 +1097,11 @@ async function start(){
   if(!DB.petugas.length){ DB.petugas=[{id:uid(), nama:"Koordinator", peran:"koordinator", pinHash:await hashPin("1234"), pinDefault:true}]; }
   if(!had){ seedDemo(); }
   save(); render();
+  if(DB.server){ sync(); }
+  window.addEventListener("online", ()=>{ chip(); sync(); });
+  window.addEventListener("offline", chip);
+  document.addEventListener("visibilitychange", ()=>{ if(document.visibilityState==="visible") sync(); });
+  setInterval(()=>{ if(document.visibilityState==="visible") sync(); }, 120000);
   try{ if(window.claude && typeof window.claude.use==="function"){ window.claude.use("downloads").then(d=>{ dlCap=d; }).catch(()=>{}); } }catch(e){}
 }
 start();
