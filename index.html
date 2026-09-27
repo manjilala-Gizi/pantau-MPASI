@@ -1,0 +1,943 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}[hidden]{display:none!important}</style>
+</head>
+<body>
+<title>Pantau MP-ASI Moncongloe</title>
+<meta name="theme-color" content="#2E6B4A">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
+<style>
+:root{
+  --bg:#F3F6F1; --surface:#FFFFFF; --surface-2:#F8FAF6; --ink:#17302A; --muted:#5B6D65; --line:#DCE4DC;
+  --primary:#2E6B4A; --primary-ink:#FFFFFF; --primary-soft:#E2EFE6;
+  --accent:#B57A0C; --accent-soft:#F8EDD4;
+  --danger:#B3402C; --danger-soft:#F7E1DC;
+  --info:#2F5E86; --info-soft:#E1ECF5;
+  --shadow:0 1px 2px rgba(23,48,42,.06),0 4px 14px rgba(23,48,42,.06);
+  --radius:12px;
+  --font:"Plus Jakarta Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0E1814; --surface:#16231E; --surface-2:#1B2A24; --ink:#E4EEE8; --muted:#9BB0A6; --line:#29392F;
+    --primary:#72C193; --primary-ink:#0E1814; --primary-soft:#1D3A2B;
+    --accent:#E2B04A; --accent-soft:#3A2F16;
+    --danger:#E58470; --danger-soft:#3E231E;
+    --info:#86B6E0; --info-soft:#1C2C3B;
+    --shadow:0 1px 2px rgba(0,0,0,.3);
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0E1814; --surface:#16231E; --surface-2:#1B2A24; --ink:#E4EEE8; --muted:#9BB0A6; --line:#29392F;
+  --primary:#72C193; --primary-ink:#0E1814; --primary-soft:#1D3A2B;
+  --accent:#E2B04A; --accent-soft:#3A2F16;
+  --danger:#E58470; --danger-soft:#3E231E;
+  --info:#86B6E0; --info-soft:#1C2C3B;
+  --shadow:0 1px 2px rgba(0,0,0,.3);
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{background:var(--bg)}
+body{margin:0;font-family:var(--font);font-size:15px;line-height:1.5;color:var(--ink);-webkit-font-smoothing:antialiased}
+button,input,select,textarea{font:inherit;color:inherit}
+h1,h2,h3{text-wrap:balance;margin:0;line-height:1.25}
+.num{font-variant-numeric:tabular-nums}
+
+/* shell */
+.topbar{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--primary);color:var(--primary-ink);padding:10px 16px}
+.topbar-in{max-width:760px;margin:0 auto;display:flex;align-items:center;gap:10px}
+.brand{display:flex;flex-direction:column;min-width:0;flex:1}
+.brand b{font-size:16px;font-weight:800;letter-spacing:.2px}
+.brand small{font-size:12px;opacity:.85;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sync{font-size:11.5px;font-weight:600;padding:4px 9px;border-radius:999px;background:rgba(255,255,255,.18);white-space:nowrap}
+main{max-width:760px;margin:0 auto;padding:16px 16px 96px;display:flex;flex-direction:column;gap:14px}
+.tabbar{position:fixed;left:0;right:0;bottom:0;z-index:20;background:var(--surface);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px)}
+.tabbar-in{max-width:760px;margin:0 auto;display:grid;grid-template-columns:repeat(4,1fr)}
+.tab{background:none;border:0;padding:9px 4px 10px;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:11.5px;font-weight:600;color:var(--muted);cursor:pointer}
+.tab svg{width:22px;height:22px}
+.tab[aria-current="page"]{color:var(--primary)}
+
+/* cards and blocks */
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:16px;display:flex;flex-direction:column;gap:12px}
+.card h2{font-size:16px;font-weight:700}
+.card h3{font-size:14px;font-weight:700}
+.eyebrow{font-size:11.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.muted{color:var(--muted)}
+.small{font-size:13px}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.spread{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.stack{display:flex;flex-direction:column;gap:10px}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+@media (max-width:420px){.grid3{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}}
+
+.banner{border-radius:10px;padding:10px 12px;font-size:13.5px;display:flex;gap:10px;align-items:flex-start}
+.banner.warn{background:var(--accent-soft);color:var(--ink)}
+.banner.err{background:var(--danger-soft);color:var(--ink)}
+.banner.info{background:var(--info-soft);color:var(--ink)}
+.banner.ok{background:var(--primary-soft);color:var(--ink)}
+.banner b{font-weight:700}
+
+.stat{background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:2px}
+.stat .v{font-size:22px;font-weight:800;font-variant-numeric:tabular-nums;line-height:1.1}
+.stat .l{font-size:12px;color:var(--muted);font-weight:600}
+
+.progress{height:10px;background:var(--line);border-radius:999px;overflow:hidden}
+.progress>i{display:block;height:100%;background:var(--primary);border-radius:999px}
+
+/* buttons & inputs */
+.btn{appearance:none;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:10px;padding:10px 14px;font-weight:700;font-size:14.5px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;text-decoration:none}
+.btn.primary{background:var(--primary);border-color:var(--primary);color:var(--primary-ink)}
+.btn.danger{color:var(--danger);border-color:var(--danger-soft)}
+.btn.block{width:100%}
+.btn.sm{min-height:34px;padding:6px 10px;font-size:13px}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn:focus-visible,.tab:focus-visible,.yn button:focus-visible,.chip:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--info);outline-offset:2px}
+label.f{display:flex;flex-direction:column;gap:5px;font-size:13px;font-weight:700;color:var(--muted)}
+input[type=text],input[type=password],input[type=date],input[type=search],input[type=tel],select,textarea{width:100%;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 12px;min-height:44px;font-size:15px;color:var(--ink);font-weight:500}
+input[readonly]{background:var(--surface-2)}
+
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:6px 12px;font-size:13px;font-weight:700;cursor:pointer;color:var(--muted)}
+.chip[aria-pressed="true"]{background:var(--primary);border-color:var(--primary);color:var(--primary-ink)}
+
+.tag{display:inline-flex;align-items:center;font-size:11.5px;font-weight:700;padding:2px 8px;border-radius:999px;white-space:nowrap}
+.tag.red{background:var(--danger-soft);color:var(--danger)}
+.tag.amber{background:var(--accent-soft);color:var(--accent)}
+.tag.green{background:var(--primary-soft);color:var(--primary)}
+.tag.blue{background:var(--info-soft);color:var(--info)}
+.tag.grey{background:var(--surface-2);color:var(--muted);border:1px solid var(--line)}
+
+/* list */
+.list{display:flex;flex-direction:column;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden}
+.item{display:flex;gap:12px;align-items:center;padding:12px 14px;border-bottom:1px solid var(--line);background:none;border-left:0;border-right:0;border-top:0;text-align:left;width:100%;cursor:pointer}
+.item:last-child{border-bottom:0}
+.item:hover{background:var(--surface-2)}
+.item .who{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+.item .nm{font-weight:700;font-size:14.5px;overflow-wrap:anywhere}
+.item .meta{font-size:12.5px;color:var(--muted)}
+.score{flex:none;width:46px;height:46px;border-radius:50%;display:grid;place-items:center;font-weight:800;font-size:13px;font-variant-numeric:tabular-nums}
+.score.done{background:var(--primary-soft);color:var(--primary)}
+.score.low{background:var(--accent-soft);color:var(--accent)}
+.score.todo{border:2px dashed var(--line);color:var(--muted);font-size:11px}
+
+/* form: food groups */
+.child{display:flex;flex-direction:column;gap:4px}
+.child .nm{font-size:18px;font-weight:800}
+.fg{display:grid;grid-template-columns:30px 1fr;gap:4px 10px;padding:12px 0;border-top:1px solid var(--line)}
+.fg:first-of-type{border-top:0}
+.fg .n{grid-row:span 2;width:28px;height:28px;border-radius:8px;background:var(--surface-2);border:1px solid var(--line);display:grid;place-items:center;font-weight:800;font-size:13px;color:var(--muted)}
+.fg .q{font-weight:700;font-size:15px}
+.fg .ex{font-size:12.5px;color:var(--muted)}
+.fg .yn{grid-column:2;display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px}
+.yn button{min-height:42px;border-radius:10px;border:1px solid var(--line);background:var(--surface);font-weight:800;cursor:pointer;color:var(--muted)}
+.yn button[aria-pressed="true"].y{background:var(--primary);border-color:var(--primary);color:var(--primary-ink)}
+.yn button[aria-pressed="true"].t{background:var(--ink);border-color:var(--ink);color:var(--surface)}
+.fg.missing .q{color:var(--danger)}
+.meter{display:flex;gap:4px}
+.meter i{flex:1;height:8px;border-radius:3px;background:var(--line)}
+.meter i.on{background:var(--primary)}
+.sticky-save{position:sticky;bottom:calc(64px + env(safe-area-inset-bottom,0px));z-index:5;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:10px 12px;box-shadow:var(--shadow);display:flex;gap:10px;align-items:center}
+.sticky-save .sum{flex:1;display:flex;flex-direction:column;gap:4px;min-width:0}
+
+/* tables */
+.tbl-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:10px}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th,td{padding:8px 8px;text-align:left;border-bottom:1px solid var(--line);white-space:nowrap}
+td:first-child{white-space:normal}
+th{font-size:11.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);background:var(--surface-2)}
+td.r,th.r{text-align:right;font-variant-numeric:tabular-nums}
+tr:last-child td{border-bottom:0}
+.bar{display:flex;align-items:center;gap:8px}
+.bar .t{flex:1;height:8px;background:var(--line);border-radius:999px;overflow:hidden;min-width:60px}
+.bar .t i{display:block;height:100%;background:var(--primary)}
+
+/* login */
+.login{min-height:100%;display:flex;align-items:center;justify-content:center;padding:24px 16px}
+.login .card{width:100%;max-width:400px}
+.logo{width:56px;height:56px;border-radius:14px;background:var(--primary);display:grid;place-items:center}
+.logo svg{width:34px;height:34px}
+
+/* modal & toast */
+.modal-bg{position:fixed;inset:0;background:rgba(10,20,16,.45);z-index:50;display:flex;align-items:flex-end;justify-content:center;padding:16px}
+.modal{background:var(--surface);border-radius:14px;padding:18px;max-width:440px;width:100%;display:flex;flex-direction:column;gap:14px;box-shadow:var(--shadow)}
+@media (min-width:600px){.modal-bg{align-items:center}}
+.toast{position:fixed;left:50%;transform:translateX(-50%);top:calc(64px + env(safe-area-inset-top,0px));background:var(--ink);color:var(--surface);padding:10px 16px;border-radius:10px;font-weight:600;font-size:14px;z-index:60;max-width:calc(100% - 32px)}
+.demo-flag{background:repeating-linear-gradient(135deg,var(--accent-soft),var(--accent-soft) 10px,var(--surface) 10px,var(--surface) 20px);border:1px dashed var(--accent)}
+.file-drop{border:2px dashed var(--line);border-radius:12px;padding:18px;text-align:center;display:flex;flex-direction:column;gap:8px;align-items:center;background:var(--surface-2)}
+details summary{cursor:pointer;font-weight:700;font-size:13.5px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+
+<div id="app" aria-live="polite"></div>
+<div id="overlay"></div>
+
+<script src="xlsx.full.min.js"></script>
+<script>
+(function(){
+"use strict";
+
+/* ============ KONSTANTA ============ */
+const APP_VERSI = "0.1 (prototipe)";
+const STORE_KEY = "mpasi_moncongloe_v1";
+const PUSKESMAS = "MONCONGLOE";
+const BULAN = ["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"];
+const BULAN_PANTAU = [3,6,9,12];
+const FOODS = [
+  {k:"asi", q:"Minum ASI?", ex:"Menyusu langsung atau ASI perah, siang atau malam"},
+  {k:"sereal", q:"Makan nasi, bubur, atau makanan pokok lain?", ex:"Nasi, bubur, jagung, ubi, singkong, roti, mi, biskuit"},
+  {k:"kacang", q:"Makan kacang-kacangan?", ex:"Tempe, tahu, kacang hijau, kacang tanah"},
+  {k:"susu", q:"Minum susu atau makan olahan susu?", ex:"Susu formula, susu UHT/bubuk, keju, yoghurt (bukan ASI)"},
+  {k:"daging/unggas", q:"Makan ikan, daging, atau ayam?", ex:"Ikan bandeng, cakalang, teri, katombo, ayam, hati, daging, udang"},
+  {k:"telur", q:"Makan telur?", ex:"Telur ayam, bebek, puyuh"},
+  {k:"buah_sayur_vita", q:"Makan sayur hijau tua atau buah/sayur kuning-oranye?", ex:"Daun kelor, bayam, kangkung, daun singkong, wortel, labu kuning, pepaya, mangga"},
+  {k:"buah_sayur_lain", q:"Makan buah atau sayur lainnya?", ex:"Pisang, jeruk, semangka, tomat, kol, buncis, terong, tauge"}
+];
+const JENIS_INTERVENSI = ["PMT lokal","PMT pabrikan","Konseling PMBA","Kelas Ibu Balita","Rujukan","Lainnya"];
+const EXPORT_COLS = ["No","NIK","Nama","tgl_monitoring","asi","sereal","kacang","susu","daging/unggas","telur","buah_sayur_vita","buah_sayur_lain","dapat_intervensi"];
+
+/* ============ UTIL ============ */
+const $app = document.getElementById("app");
+const $ov = document.getElementById("overlay");
+const esc = s => String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const pad = n => String(n).padStart(2,"0");
+const ymdOf = d => d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate());
+const todayYmd = () => ymdOf(new Date());
+const parseYmd = s => { const m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(s||""); return m?{y:+m[1],m:+m[2],d:+m[3]}:null; };
+function ageMonths(dob, at){ const a=parseYmd(dob), b=parseYmd(at); if(!a||!b) return null;
+  let mo=(b.y-a.y)*12+(b.m-a.m); if(b.d<a.d) mo--; return mo; }
+function lastDay(y,m){ return new Date(y,m,0).getDate(); }
+function periodeLabel(p){ const [y,m]=p.split("-").map(Number); return BULAN[m-1]+" "+y; }
+function periodeRange(p){ const [y,m]=p.split("-").map(Number); return {start:y+"-"+pad(m)+"-01", end:y+"-"+pad(m)+"-"+pad(lastDay(y,m)), y, m}; }
+function prevMonth(p){ let [y,m]=p.split("-").map(Number); m--; if(m<1){m=12;y--;} return y+"-"+pad(m); }
+function defaultPeriode(){ const d=new Date(); let y=d.getFullYear(), m=d.getMonth()+1;
+  const nxt=BULAN_PANTAU.find(b=>b>=m); if(nxt) m=nxt; else {m=3;y++;} return y+"-"+pad(m); }
+function periodeOptions(){ const y=new Date().getFullYear(); const out=[]; for(let yy=y-1;yy<=y+1;yy++) for(const m of BULAN_PANTAU) out.push(yy+"-"+pad(m)); return out; }
+const clean = s => String(s==null?"":s).replace(/ /g," ").trim();
+const normH = s => clean(s).toLowerCase().replace(/[^a-z0-9]/g,"");
+const nikOk = n => /^\d{16}$/.test(n||"");
+const fmtDate = s => { const p=parseYmd(s); return p? p.d+" "+BULAN[p.m-1].slice(0,3)+" "+p.y : "-"; };
+const pct = (a,b) => b? Math.round(a*100/b) : 0;
+function uid(){ return Math.random().toString(36).slice(2,10)+Date.now().toString(36); }
+async function hashPin(pin){
+  const s="mpasi-mcl|"+pin;
+  try{ if(crypto && crypto.subtle){ const b=await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s));
+    return Array.from(new Uint8Array(b)).map(x=>x.toString(16).padStart(2,"0")).join(""); } }catch(e){}
+  let h=5381; for(let i=0;i<s.length;i++) h=((h<<5)+h+s.charCodeAt(i))|0; return "d"+(h>>>0).toString(16);
+}
+function scoreOf(r){ return FOODS.reduce((a,f)=>a+(r[f.k]===1?1:0),0); }
+
+/* ============ PENYIMPANAN ============ */
+let storageOk = true;
+function blankDB(){ return {versi:1, pengaturan:{periode:defaultPeriode()}, petugas:[], sasaran:{}, pemantauan:{}, sesi:null, demo:false}; }
+let DB = blankDB();
+function load(){ try{ const raw=localStorage.getItem(STORE_KEY); if(raw){ DB=Object.assign(blankDB(), JSON.parse(raw)); return true; } }catch(e){ storageOk=false; } return false; }
+function save(){ try{ localStorage.setItem(STORE_KEY, JSON.stringify(DB)); storageOk=true; }catch(e){ storageOk=false; } }
+
+/* ============ STATE UI ============ */
+const UI = { view:"beranda", q:"", desa:"", pos:"", status:"semua", formKey:null, draft:null, impor:null, imporErr:null, showErr:false };
+function me(){ return DB.petugas.find(p=>p.id===DB.sesi); }
+function isKoor(){ const u=me(); return u && u.peran==="koordinator"; }
+function per(){ return DB.pengaturan.periode; }
+function sasaranList(p){ return DB.sasaran[p||per()] || []; }
+function pantauMap(p){ const k=p||per(); if(!DB.pemantauan[k]) DB.pemantauan[k]={}; return DB.pemantauan[k]; }
+function keyOf(s){ return s.nik ? s.nik : ("N:"+s.nama+"|"+s.tglLahir); }
+
+/* ============ DATA CONTOH ============ */
+function seedDemo(){
+  const p=per(); const {y,m}=periodeRange(p);
+  const desa=[["MONCONGLOE","PAMANJENGAN"],["MONCONGLOE","BIRING JE'NE"],["MONCONGLOE BULU","TAMMU-TAMMU"],["MONCONGLOE BULU","DICCEKANG"],["MONCONGLOE LAPPARA","ASABRI"],["MONCONGLOE LAPPARA","LEKO"],["BONTO MARANNU","BALLAPATI"],["BONTO BUNGA","MANJALLING"]];
+  const nama=["NUR AISYAH (CONTOH)","MUH. RIZKI (CONTOH)","SITTI HALIMAH (CONTOH)","AHMAD FAUZAN (CONTOH)","ANDI NURUL (CONTOH)","MUH. ARKAN (CONTOH)","FATIMAH AZZAHRA (CONTOH)","RAHMAT HIDAYAT (CONTOH)","ZASKIA PUTRI (CONTOH)","MUH. ALIF (CONTOH)","NAYLA RAMADHANI (CONTOH)","DAFFA PRATAMA (CONTOH)","KHAIRUNNISA (CONTOH)","MUH. YUSUF (CONTOH)","AINUN (CONTOH)","FIKRI (CONTOH)"];
+  const tb=["Normal","Normal","Pendek","Normal","Sangat Pendek","Normal","Normal","Pendek","Normal","Normal","Normal","Normal","Pendek","Normal","Normal","Normal"];
+  const bbtb=["Gizi Baik","Gizi Baik","Gizi Baik","Gizi Kurang","Gizi Baik","Gizi Baik","Risiko Gizi Lebih","Gizi Baik","Gizi Baik","Gizi Kurang","Gizi Baik","Gizi Baik","Gizi Baik","Gizi Baik","Gizi Baik","Gizi Baik"];
+  const list=nama.map((n,i)=>{ const umur=6+((i*5)%18); let yy=y, mm=m-umur; while(mm<1){mm+=12;yy--;}
+    const d=desa[i%desa.length]; return {nik:"9999"+pad(i+1)+"0000000000", nama:n, jk:i%2?"L":"P", tglLahir:yy+"-"+pad(mm)+"-"+pad(1+(i*3)%27), namaOrtu:"ORANG TUA (CONTOH)", desa:d[0], posyandu:d[1], bbu:bbtb[i]==="Gizi Kurang"?"Kurang":"Normal", tbu:tb[i], bbtb:bbtb[i], sumber:"impor", demo:true}; });
+  DB.sasaran[p]=list; DB.pemantauan[p]={};
+  const pm=DB.pemantauan[p]; const koor=DB.petugas[0];
+  const patterns=[[1,1,0,1,1,0,1,1],[1,1,0,0,1,0,1,0],[1,1,1,0,1,1,1,1],[0,1,0,1,1,1,0,1],[1,1,0,0,0,0,1,0],[1,1,1,0,1,0,1,1]];
+  const {start}=periodeRange(p); const dmax=Math.min(new Date().getDate(), 28);
+  patterns.forEach((pt,i)=>{ const s=list[i*2]; const r={tgl:start.slice(0,8)+pad(Math.max(1,Math.min(dmax,3+i*4))), intervensi:i%2, jenis:i%2?["Konseling PMBA"]:[], lainnya:"", petugas:koor?koor.nama:"Koordinator", petugasId:koor?koor.id:"", waktuInput:new Date().toISOString(), waktuUbah:new Date().toISOString()};
+    FOODS.forEach((f,j)=>r[f.k]=pt[j]); pm[keyOf(s)]=r; });
+  DB.demo=true;
+}
+function clearDemo(){
+  for(const p of Object.keys(DB.sasaran)){ const keep=DB.sasaran[p].filter(s=>!s.demo); const removed=DB.sasaran[p].filter(s=>s.demo).map(keyOf);
+    DB.sasaran[p]=keep; if(DB.pemantauan[p]) removed.forEach(k=>delete DB.pemantauan[p][k]); }
+  DB.demo=false;
+}
+
+/* ============ IMPOR FILE E-PPGBM ============ */
+function looksHtml(buf){ const u=new Uint8Array(buf.slice(0,600)); let s=""; for(const b of u) s+=String.fromCharCode(b); return /^\s*(﻿)?\s*</.test(s) && /<(html|table|!doctype)/i.test(s); }
+function decodeText(buf){ let t; try{ t=new TextDecoder("utf-8",{fatal:true}).decode(buf); }catch(e){ t=new TextDecoder("windows-1252").decode(buf); } return t; }
+function rowsFromHtml(text){
+  const doc=new DOMParser().parseFromString(text,"text/html");
+  const tables=[...doc.querySelectorAll("table")];
+  if(!tables.length){
+    if(/frameset|sheet001\.htm/i.test(text)) throw new Error("File ini hanya berisi 'bingkai' tanpa data (format Excel Web Page). Buka file di Excel, lalu Save As → Excel Workbook (.xlsx), atau unduh ulang file asli dari e-PPGBM tanpa di-save ulang.");
+    throw new Error("Tidak ditemukan tabel data di file ini.");
+  }
+  let best=tables[0]; for(const t of tables) if(t.rows.length>best.rows.length) best=t;
+  return [...best.rows].map(tr=>[...tr.cells].map(td=>clean(td.textContent)));
+}
+function rowsFromWorkbook(buf){
+  const wb=XLSX.read(buf,{type:"array",cellDates:false,raw:false});
+  const ws=wb.Sheets[wb.SheetNames[0]];
+  return XLSX.utils.sheet_to_json(ws,{header:1,raw:true,defval:null,blankrows:false});
+}
+function toYmd(v){
+  if(v==null||v==="") return "";
+  if(typeof v==="number"){ const d=XLSX.SSF.parse_date_code(v); return d? d.y+"-"+pad(d.m)+"-"+pad(d.d) : ""; }
+  if(v instanceof Date) return ymdOf(v);
+  const s=clean(v); let m;
+  if((m=/^(\d{4})-(\d{1,2})-(\d{1,2})/.exec(s))) return m[1]+"-"+pad(m[2])+"-"+pad(m[3]);
+  if((m=/^(\d{1,2})[-\/.](\d{1,2})[-\/.](\d{4})/.exec(s))) return m[3]+"-"+pad(m[2])+"-"+pad(m[1]);
+  return "";
+}
+function toNik(v){
+  if(v==null) return "";
+  if(typeof v==="number") return Number.isFinite(v)? Math.round(v).toString() : "";
+  return clean(v).replace(/^'/,"").replace(/\s+/g,"");
+}
+const COLMAP = {nik:["nik"], nama:["nama","namaanak","namabalita"], jk:["jk","jeniskelamin"], tglLahir:["tgllahir","tanggallahir"], namaOrtu:["namaortu","namaorangtua"],
+  desa:["desakel","desa","kelurahan"], posyandu:["posyandu"], bbu:["bbu"], tbu:["tbu"], bbtb:["bbtb"], tglUkur:["tanggalpengukuran","tglpengukuran","tglukur"]};
+function parseRows(rows, fname){
+  let hi=-1, idx={};
+  for(let i=0;i<Math.min(rows.length,15);i++){ const h=(rows[i]||[]).map(normH); if(h.includes("nik") && h.includes("nama")){ hi=i; h.forEach((x,j)=>{ for(const k in COLMAP) if(COLMAP[k].includes(x) && idx[k]==null) idx[k]=j; }); break; } }
+  if(hi<0) throw new Error(fname+": baris judul kolom (NIK, Nama) tidak ditemukan. Pastikan ini laporan Daftar Anak Berdasarkan Status Gizi dari e-PPGBM.");
+  if(idx.tglLahir==null) throw new Error(fname+": tidak ada kolom Tgl Lahir, jadi usia anak tidak bisa dihitung. Gunakan laporan Daftar Anak Berdasarkan Status Gizi (bukan file Format Import).");
+  const out=[];
+  for(let i=hi+1;i<rows.length;i++){ const r=rows[i]||[]; const g=k=> idx[k]==null? null : r[idx[k]];
+    const nama=clean(g("nama")); if(!nama) continue;
+    out.push({nik:toNik(g("nik")), nama, jk:clean(g("jk")).toUpperCase().slice(0,1), tglLahir:toYmd(g("tglLahir")), namaOrtu:clean(g("namaOrtu")), desa:clean(g("desa")).toUpperCase(), posyandu:clean(g("posyandu")).toUpperCase(),
+      bbu:clean(g("bbu")), tbu:clean(g("tbu")), bbtb:clean(g("bbtb")), tglUkur:toYmd(g("tglUkur")), file:fname});
+  }
+  if(!out.length) throw new Error(fname+": tidak ada baris data anak.");
+  return out;
+}
+async function readImportFile(file){
+  const buf=await file.arrayBuffer();
+  const rows = looksHtml(buf) ? rowsFromHtml(decodeText(buf)) : rowsFromWorkbook(buf);
+  return parseRows(rows, file.name);
+}
+function buildImportPreview(all, p){
+  const {start,end}=periodeRange(p);
+  const map=new Map(); let dup=0;
+  for(const r of all){ const k=r.nik? r.nik : ("N:"+r.nama+"|"+r.tglLahir);
+    if(map.has(k)){ dup++; const o=map.get(k); if((r.tglUkur||"")>(o.tglUkur||"")) map.set(k,r); } else map.set(k,r); }
+  const uniq=[...map.values()];
+  const lolos=[], luar=[], tanpaTgl=[];
+  for(const r of uniq){ if(!r.tglLahir){ tanpaTgl.push(r); continue; }
+    const aStart=ageMonths(r.tglLahir,start), aEnd=ageMonths(r.tglLahir,end);
+    if(aEnd>=6 && aStart<=23) lolos.push(r); else luar.push(r); }
+  const bulanData={}; all.forEach(r=>{ if(r.tglUkur){ const b=r.tglUkur.slice(0,7); bulanData[b]=(bulanData[b]||0)+1; } });
+  const byDesa={}; lolos.forEach(r=>{ byDesa[r.desa||"(tanpa desa)"]=(byDesa[r.desa||"(tanpa desa)"]||0)+1; });
+  const exist=new Set(sasaranList(p).filter(s=>!s.demo).map(keyOf));
+  const baru=lolos.filter(r=>!exist.has(r.nik?r.nik:("N:"+r.nama+"|"+r.tglLahir))).length;
+  return {p, totalBaris:all.length, dup, uniq:uniq.length, lolos, luar:luar.length, tanpaTgl, byDesa, bulanData,
+    nikKosong:lolos.filter(r=>!r.nik), nikSalah:lolos.filter(r=>r.nik && !nikOk(r.nik)), baru, perbarui:lolos.length-baru,
+    bulanCocok: Object.keys(bulanData).some(b=>b===p||b===prevMonth(p))};
+}
+function commitImport(pv){
+  if(DB.demo) clearDemo();
+  const p=pv.p; const list=sasaranList(p).slice(); const pos=new Map(list.map((s,i)=>[keyOf(s),i]));
+  for(const r of pv.lolos){ const s={nik:r.nik, nama:r.nama, jk:r.jk, tglLahir:r.tglLahir, namaOrtu:r.namaOrtu, desa:r.desa, posyandu:r.posyandu, bbu:r.bbu, tbu:r.tbu, bbtb:r.bbtb, tglUkur:r.tglUkur, sumber:"impor"};
+    const k=keyOf(s); if(pos.has(k)) list[pos.get(k)]=Object.assign({},list[pos.get(k)],s); else { pos.set(k,list.length); list.push(s); } }
+  DB.sasaran[p]=list; DB.lastImport={waktu:new Date().toISOString(), jumlah:pv.lolos.length, oleh:me()?me().nama:""};
+  save();
+}
+
+/* ============ EKSPOR ============ */
+function exportRows(p){
+  const pm=pantauMap(p); const rows=[], dibuang=[], manual=[];
+  const list=sasaranList(p).slice().sort((a,b)=>(a.desa+a.posyandu+a.nama).localeCompare(b.desa+b.posyandu+b.nama));
+  for(const s of list){ const r=pm[keyOf(s)]; if(!r) continue;
+    if(!nikOk(s.nik)){ dibuang.push({s,alasan:s.nik?"NIK tidak 16 digit":"NIK kosong"}); continue; }
+    if(s.sumber==="manual") manual.push(s);
+    rows.push({s,r}); }
+  return {rows,dibuang,manual};
+}
+function buildEppgbmXlsx(p){
+  const {rows}=exportRows(p);
+  const aoa=[EXPORT_COLS];
+  rows.forEach(({s,r},i)=> aoa.push([String(i+1), s.nik, s.nama, r.tgl, ...FOODS.map(f=>String(r[f.k]?1:0)), String(r.intervensi?1:0)]));
+  const ws={};
+  aoa.forEach((row,ri)=>row.forEach((v,ci)=>{ ws[XLSX.utils.encode_cell({r:ri,c:ci})]={t:"s",v:String(v),z:"@"}; }));
+  ws["!ref"]=XLSX.utils.encode_range({s:{r:0,c:0},e:{r:aoa.length-1,c:EXPORT_COLS.length-1}});
+  ws["!cols"]=[{wch:5},{wch:19},{wch:28},{wch:13},...FOODS.map(()=>({wch:10})),{wch:15}];
+  const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,"Sheet1");
+  return XLSX.write(wb,{bookType:"xlsx",type:"array"});
+}
+function buildRekapXlsx(p){
+  const pm=pantauMap(p);
+  const head=["No","NIK","Nama","JK","Tgl Lahir","Usia (bln)","Desa/Kel","Posyandu","BB/U","TB/U","BB/TB","Sumber","Status isian","tgl_monitoring",...FOODS.map(f=>f.k),"Skor (x/8)","dapat_intervensi","Jenis intervensi","Diisi oleh","Waktu ubah"];
+  const aoa=[head];
+  sasaranList(p).forEach((s,i)=>{ const r=pm[keyOf(s)];
+    aoa.push([i+1,s.nik,s.nama,s.jk,s.tglLahir, r?ageMonths(s.tglLahir,r.tgl):ageMonths(s.tglLahir,todayYmd()), s.desa,s.posyandu,s.bbu,s.tbu,s.bbtb,s.sumber, r?"Sudah":"Belum", r?r.tgl:"",
+      ...FOODS.map(f=>r?(r[f.k]?1:0):""), r?scoreOf(r):"", r?(r.intervensi?1:0):"", r?(r.jenis||[]).map(j=>j==="Lainnya"&&r.lainnya?("Lainnya: "+r.lainnya):j).join("; "):"", r?r.petugas:"", r?r.waktuUbah:""]); });
+  const ws=XLSX.utils.aoa_to_sheet(aoa);
+  for(let i=1;i<aoa.length;i++){ const c=ws[XLSX.utils.encode_cell({r:i,c:1})]; if(c){c.t="s";c.v=String(aoa[i][1]||"");c.z="@";} }
+  const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,"Rekap "+p);
+  return XLSX.write(wb,{bookType:"xlsx",type:"array"});
+}
+let dlCap=null;
+async function saveFile(filename, data, mime){
+  if(dlCap){ try{ await dlCap.save({filename, data: data instanceof ArrayBuffer? data.slice(0): data}); toast("File disiapkan: "+filename); return; }
+    catch(e){ if(e && e.code==="declined") { toast("Unduhan dibatalkan"); return; } if(e && e.code!=="unavailable" && e.code!=="not_granted"){ toast("Gagal mengunduh: "+(e.message||e.code)); return; } } }
+  const blob=new Blob([data],{type:mime||"application/octet-stream"});
+  const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download=filename; document.body.appendChild(a); a.click();
+  setTimeout(()=>{URL.revokeObjectURL(a.href); a.remove();},1500); toast("Diunduh: "+filename);
+}
+
+/* ============ MODAL & TOAST ============ */
+function ask(msg, okLabel, danger){
+  return new Promise(res=>{
+    $ov.innerHTML=`<div class="modal-bg" role="dialog" aria-modal="true"><div class="modal"><div>${msg}</div><div class="row" style="justify-content:flex-end"><button class="btn" id="mNo">Batal</button><button class="btn ${danger?"danger":"primary"}" id="mOk">${esc(okLabel||"Ya")}</button></div></div></div>`;
+    const done=v=>{ $ov.innerHTML=""; res(v); };
+    document.getElementById("mNo").onclick=()=>done(false); document.getElementById("mOk").onclick=()=>done(true);
+    document.getElementById("mOk").focus();
+  });
+}
+let toastT;
+function toast(msg){ let t=document.querySelector(".toast"); if(!t){ t=document.createElement("div"); t.className="toast"; t.setAttribute("role","status"); document.body.appendChild(t); }
+  t.textContent=msg; clearTimeout(toastT); toastT=setTimeout(()=>t.remove(),2600); }
+
+/* ============ IKON ============ */
+const IC={
+  home:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/></svg>',
+  list:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19c.8-3 3-4.6 5.5-4.6s4.7 1.6 5.5 4.6"/><path d="M16 8h5M16 12h5M18 16h3"/></svg>',
+  chart:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>',
+  menu:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>',
+  bowl:'<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11h18a9 9 0 0 1-18 0z"/><path d="M8 8c0-2 1.5-2 1.5-4M12 8c0-2 1.5-2 1.5-4M16 8c0-2 1.5-2 1.5-4"/></svg>'
+};
+
+/* ============ RENDER ============ */
+function render(){
+  if(!DB.sesi || !me()) return renderLogin();
+  const u=me();
+  const p=per(); const list=sasaranList(p); const pm=pantauMap(p);
+  const done=list.filter(s=>pm[keyOf(s)]).length;
+  let body="";
+  switch(UI.view){
+    case "sasaran": body=viewSasaran(); break;
+    case "form": body=viewForm(); break;
+    case "tambah": body=viewTambah(); break;
+    case "rekap": body=viewRekap(); break;
+    case "menu": body=viewMenu(); break;
+    case "impor": body=viewImpor(); break;
+    case "unduh": body=viewUnduh(); break;
+    case "atur": body=viewAtur(); break;
+    case "cadangan": body=viewCadangan(); break;
+    default: body=viewBeranda();
+  }
+  const tabs=[["beranda","Beranda",IC.home],["sasaran","Sasaran",IC.list],["rekap","Rekap",IC.chart],["menu","Menu",IC.menu]];
+  const curTab = ["form","tambah"].includes(UI.view)?"sasaran": ["impor","unduh","atur","cadangan"].includes(UI.view)?"menu":UI.view;
+  $app.innerHTML=`
+  <header class="topbar"><div class="topbar-in">
+    <div class="brand"><b>Pantau MP-ASI</b><small>Pkm ${esc(PUSKESMAS)} · ${esc(periodeLabel(p))} · ${esc(u.nama)}</small></div>
+    <span class="sync" title="Tahap 1: data tersimpan di perangkat ini">Mode lokal</span>
+  </div></header>
+  <main>${!storageOk?`<div class="banner err"><div><b>Penyimpanan perangkat tidak tersedia.</b> Data hanya bertahan selama halaman ini terbuka. Gunakan menu Cadangan untuk menyimpan.</div></div>`:""}${body}</main>
+  <nav class="tabbar" aria-label="Navigasi utama"><div class="tabbar-in">
+    ${tabs.map(([k,l,ic])=>`<button class="tab" data-go="${k}" ${curTab===k?'aria-current="page"':""}>${ic}<span>${l}</span></button>`).join("")}
+  </div></nav>`;
+  bindCommon();
+  if(UI.view==="form") bindForm();
+  if(UI.view==="sasaran") bindSasaran();
+  if(UI.view==="impor") bindImpor();
+  if(UI.view==="tambah") bindTambah();
+  if(UI.view==="atur") bindAtur();
+  if(UI.view==="cadangan") bindCadangan();
+}
+function go(v){ UI.view=v; render(); window.scrollTo(0,0); }
+function bindCommon(){
+  $app.querySelectorAll("[data-go]").forEach(b=>b.addEventListener("click",()=>{ const v=b.dataset.go; if(v==="sasaran"){UI.formKey=null;} go(v); }));
+  $app.querySelectorAll("[data-open]").forEach(b=>b.addEventListener("click",()=>openForm(b.dataset.open)));
+  $app.querySelectorAll("[data-act]").forEach(b=>b.addEventListener("click",()=>ACT[b.dataset.act] && ACT[b.dataset.act](b)));
+}
+
+/* ---- login ---- */
+function renderLogin(){
+  const users=DB.petugas;
+  const defaultPin = users.length===1 && users[0].pinDefault;
+  $app.innerHTML=`<div class="login"><div class="card">
+    <div class="row"><div class="logo">${IC.bowl}</div><div><h1 style="font-size:20px;font-weight:800">Pantau MP-ASI</h1><div class="muted small">Puskesmas Moncongloe · Kab. Maros</div></div></div>
+    <p class="small muted" style="margin:0">Pencatatan 8 kelompok pangan anak 6–23 bulan untuk diunggah ke e-PPGBM.</p>
+    <label class="f" for="lgU">Nama petugas<select id="lgU">${users.map(u=>`<option value="${esc(u.id)}">${esc(u.nama)}${u.peran==="koordinator"?" (koordinator)":""}</option>`).join("")}</select></label>
+    <label class="f" for="lgP">PIN<input id="lgP" type="password" inputmode="numeric" autocomplete="current-password" maxlength="8" placeholder="4–8 angka"></label>
+    <div id="lgE" class="small" style="color:var(--danger)" hidden></div>
+    <button class="btn primary block" id="lgB">Masuk</button>
+    ${defaultPin?`<div class="banner info"><div>PIN awal Koordinator: <b>1234</b>. Ganti di menu <b>Periode &amp; Petugas</b> setelah masuk.</div></div>`:""}
+    <div class="small muted">Versi ${APP_VERSI}</div>
+  </div></div>`;
+  const doLogin=async()=>{ const id=document.getElementById("lgU").value; const pin=document.getElementById("lgP").value.trim(); const u=DB.petugas.find(x=>x.id===id);
+    const e=document.getElementById("lgE");
+    if(!u || (await hashPin(pin))!==u.pinHash){ e.textContent="PIN salah. Coba lagi."; e.hidden=false; return; }
+    DB.sesi=u.id; save(); UI.view="beranda"; render(); };
+  document.getElementById("lgB").onclick=doLogin;
+  document.getElementById("lgP").addEventListener("keydown",ev=>{ if(ev.key==="Enter") doLogin(); });
+}
+
+/* ---- beranda ---- */
+function viewBeranda(){
+  const p=per(); const list=sasaranList(p); const pm=pantauMap(p); const u=me();
+  const rs=list.map(s=>pm[keyOf(s)]).filter(Boolean);
+  const done=rs.length, mdd=rs.filter(r=>scoreOf(r)>=5).length, intv=rs.filter(r=>r.intervensi).length;
+  const mine=rs.filter(r=>r.petugasId===u.id).length;
+  const today=todayYmd(); const {start,end}=periodeRange(p);
+  const inPeriod= today>=start && today<=end;
+  const byDesa={}; list.forEach(s=>{ const d=s.desa||"-"; byDesa[d]=byDesa[d]||{n:0,d:0}; byDesa[d].n++; if(pm[keyOf(s)]) byDesa[d].d++; });
+  return `
+  ${DB.demo?`<div class="banner warn demo-flag"><div><b>Sedang memakai data contoh.</b> Nama bertanda (CONTOH) bukan anak sungguhan. ${isKoor()?`Data contoh otomatis terhapus saat Anda mengimpor file Daftar Anak dari e-PPGBM.`:"Minta koordinator mengimpor data sasaran."}</div></div>`:""}
+  ${!inPeriod?`<div class="banner info"><div>Hari ini di luar bulan pemantauan <b>${esc(periodeLabel(p))}</b>. Tanggal monitoring harus di bulan tersebut.</div></div>`:""}
+  <section class="card">
+    <div class="spread"><div><div class="eyebrow">Periode pemantauan</div><h2 style="font-size:20px">${esc(periodeLabel(p))}</h2></div>
+      <span class="tag ${done===list.length&&list.length?"green":"amber"}">${done===list.length&&list.length?"Lengkap":"Berjalan"}</span></div>
+    <div class="stack" style="gap:6px"><div class="spread small"><span><b class="num">${done}</b> dari <b class="num">${list.length}</b> anak 6–23 bulan sudah diisi</span><b class="num">${pct(done,list.length)}%</b></div>
+      <div class="progress" role="progressbar" aria-valuenow="${pct(done,list.length)}" aria-valuemin="0" aria-valuemax="100"><i style="width:${pct(done,list.length)}%"></i></div></div>
+    <div class="grid3">
+      <div class="stat"><span class="v">${list.length-done}</span><span class="l">Belum diisi</span></div>
+      <div class="stat"><span class="v">${done?pct(mdd,done)+"%":"–"}</span><span class="l">Skor ≥5 dari 8</span></div>
+      <div class="stat"><span class="v">${mine}</span><span class="l">Isian saya</span></div>
+    </div>
+    <button class="btn primary block" data-go="sasaran">Isi pemantauan</button>
+  </section>
+  ${list.length?`<section class="card"><h2>Progres per desa</h2>
+    <div class="stack">${Object.entries(byDesa).sort((a,b)=>a[0].localeCompare(b[0])).map(([d,v])=>`
+      <div class="stack" style="gap:4px"><div class="spread small"><span style="font-weight:700">${esc(d)}</span><span class="num muted">${v.d}/${v.n}</span></div>
+      <div class="progress"><i style="width:${pct(v.d,v.n)}%"></i></div></div>`).join("")}</div></section>`:
+    `<section class="card"><h2>Belum ada data sasaran</h2><p class="small muted" style="margin:0">${isKoor()?"Impor file Daftar Anak Berdasarkan Status Gizi dari e-PPGBM untuk periode ini.":"Koordinator belum mengimpor data sasaran untuk periode ini."}</p>
+    ${isKoor()?`<button class="btn primary" data-go="impor">Impor data sasaran</button>`:""}</section>`}
+  <section class="card"><h2>Langkah kerja</h2>
+    <ol class="small" style="margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px">
+      <li><b>Koordinator</b> mengimpor file Daftar Anak (bulan pemantauan atau 1 bulan sebelumnya).</li>
+      <li><b>Petugas</b> mengisi recall 24 jam 8 kelompok pangan dan intervensi di HP.</li>
+      <li><b>Koordinator</b> mengunduh Excel e-PPGBM di laptop, lalu mengunggahnya ke e-PPGBM.</li>
+    </ol></section>`;
+}
+
+/* ---- sasaran ---- */
+function riskTags(s){ const t=[];
+  if(/sangat pendek|pendek/i.test(s.tbu||"")) t.push(`<span class="tag red">${/sangat/i.test(s.tbu)?"Sangat pendek":"Pendek"}</span>`);
+  if(/gizi buruk|gizi kurang/i.test(s.bbtb||"")) t.push(`<span class="tag red">${esc(s.bbtb)}</span>`);
+  else if(/kurang/i.test(s.bbu||"")) t.push(`<span class="tag amber">BB ${esc(s.bbu.toLowerCase())}</span>`);
+  if(s.sumber==="manual") t.push(`<span class="tag blue">Manual</span>`);
+  if(!nikOk(s.nik)) t.push(`<span class="tag amber">${s.nik?"NIK ≠16 digit":"Tanpa NIK"}</span>`);
+  return t.join(" ");
+}
+function viewSasaran(){
+  const p=per(); const all=sasaranList(p); const pm=pantauMap(p);
+  const desaList=[...new Set(all.map(s=>s.desa))].filter(Boolean).sort();
+  const posList=[...new Set(all.filter(s=>!UI.desa||s.desa===UI.desa).map(s=>s.posyandu))].filter(Boolean).sort();
+  if(UI.pos && !posList.includes(UI.pos)) UI.pos="";
+  const q=UI.q.trim().toLowerCase();
+  let list=all.filter(s=>(!UI.desa||s.desa===UI.desa)&&(!UI.pos||s.posyandu===UI.pos)&&(!q||s.nama.toLowerCase().includes(q)||(s.nik||"").includes(q)||(s.namaOrtu||"").toLowerCase().includes(q)));
+  const nDone=list.filter(s=>pm[keyOf(s)]).length;
+  if(UI.status==="belum") list=list.filter(s=>!pm[keyOf(s)]); else if(UI.status==="sudah") list=list.filter(s=>pm[keyOf(s)]);
+  const today=todayYmd(); const pr=periodeRange(p); const inPer=today>=pr.start&&today<=pr.end;
+  const outAge=s=>{ if(!inPer||pm[keyOf(s)]) return false; const u=ageMonths(s.tglLahir,today); return u!=null&&(u<6||u>23); };
+  const rank=s=> pm[keyOf(s)]?1:(outAge(s)?2:0);
+  list.sort((a,b)=>{ const ra=rank(a), rb=rank(b); if(ra!==rb) return ra-rb; return (a.posyandu+a.nama).localeCompare(b.posyandu+b.nama); });
+  const shown=list.slice(0,300);
+  return `
+  <section class="stack">
+    <input type="search" id="fQ" placeholder="Cari nama anak, NIK, atau nama orang tua" value="${esc(UI.q)}" aria-label="Cari">
+    <div class="grid2">
+      <select id="fD" aria-label="Desa"><option value="">Semua desa</option>${desaList.map(d=>`<option ${d===UI.desa?"selected":""}>${esc(d)}</option>`).join("")}</select>
+      <select id="fP" aria-label="Posyandu"><option value="">Semua posyandu</option>${posList.map(d=>`<option ${d===UI.pos?"selected":""}>${esc(d)}</option>`).join("")}</select>
+    </div>
+    <div class="spread"><div class="chips" role="group" aria-label="Status">
+      ${[["semua","Semua"],["belum","Belum"],["sudah","Sudah"]].map(([k,l])=>`<button class="chip" data-st="${k}" aria-pressed="${UI.status===k}">${l}</button>`).join("")}
+    </div><span class="small muted num">${nDone} sudah diisi</span></div>
+  </section>
+  ${all.length?(list.length?`<div class="list">${shown.map(s=>{ const r=pm[keyOf(s)]; const sc=r?scoreOf(r):null; const umur=ageMonths(s.tglLahir,r?r.tgl:today);
+    return `<button class="item" data-open="${esc(keyOf(s))}">
+      <span class="score ${r?(sc>=5?"done":"low"):"todo"}">${r?sc+"/8":"Belum"}</span>
+      <span class="who"><span class="nm">${esc(s.nama)}</span>
+        <span class="meta">${esc(s.jk||"-")} · ${umur!=null?umur+" bln":"usia ?"} · ${esc(s.posyandu||"-")}${s.namaOrtu?" · "+esc(s.namaOrtu):""}</span>
+        ${riskTags(s)||outAge(s)?`<span class="row" style="gap:4px">${outAge(s)?`<span class="tag grey">${umur<6?"Belum 6 bln hari ini":"Sudah 24 bln hari ini"}</span> `:""}${riskTags(s)}</span>`:""}
+      </span></button>`; }).join("")}</div>
+    ${list.length>shown.length?`<p class="small muted">Menampilkan 300 dari ${list.length}. Persempit dengan pencarian atau filter.</p>`:""}`
+    :`<div class="card"><p class="muted small" style="margin:0">Tidak ada anak yang cocok dengan filter ini.</p></div>`)
+  :`<div class="card"><p class="muted small" style="margin:0">Belum ada data sasaran untuk ${esc(periodeLabel(p))}.</p></div>`}
+  <button class="btn block" data-go="tambah">+ Tambah anak manual</button>`;
+}
+function bindSasaran(){
+  const q=document.getElementById("fQ"); let t;
+  q.addEventListener("input",()=>{ clearTimeout(t); t=setTimeout(()=>{ UI.q=q.value; const pos=q.selectionStart; render(); const n=document.getElementById("fQ"); n.focus(); try{n.setSelectionRange(pos,pos);}catch(e){} },200); });
+  document.getElementById("fD").onchange=e=>{ UI.desa=e.target.value; UI.pos=""; render(); };
+  document.getElementById("fP").onchange=e=>{ UI.pos=e.target.value; render(); };
+  $app.querySelectorAll("[data-st]").forEach(b=>b.onclick=()=>{ UI.status=b.dataset.st; render(); });
+}
+
+/* ---- form ---- */
+function openForm(key){
+  const s=sasaranList().find(x=>keyOf(x)===key); if(!s) return;
+  const r=pantauMap()[key];
+  const {start,end}=periodeRange(per()); const t=todayYmd();
+  UI.formKey=key; UI.showErr=false;
+  UI.draft = r ? JSON.parse(JSON.stringify(r)) : Object.assign({tgl:(t>=start&&t<=end)?t:"", intervensi:null, jenis:[], lainnya:""}, Object.fromEntries(FOODS.map(f=>[f.k,null])));
+  go("form");
+}
+function formProblems(s,d){
+  const P=[]; const {start,end}=periodeRange(per());
+  if(!d.tgl) P.push("Isi tanggal monitoring.");
+  else if(d.tgl<start||d.tgl>end) P.push("Tanggal monitoring harus di bulan "+periodeLabel(per())+".");
+  else if(d.tgl>todayYmd()) P.push("Tanggal monitoring tidak boleh setelah hari ini.");
+  const umur=d.tgl?ageMonths(s.tglLahir,d.tgl):null;
+  if(umur!=null && (umur<6||umur>23)) P.push("Usia anak pada tanggal ini "+umur+" bulan. Hanya anak 6–23 bulan yang dipantau.");
+  const kosong=FOODS.filter(f=>d[f.k]==null).length; if(kosong) P.push(kosong+" kelompok pangan belum dijawab.");
+  if(d.intervensi==null) P.push("Jawab pertanyaan intervensi.");
+  if(d.intervensi===1 && !(d.jenis||[]).length) P.push("Pilih minimal satu jenis intervensi.");
+  return P;
+}
+function viewForm(){
+  const s=sasaranList().find(x=>keyOf(x)===UI.formKey); if(!s) return `<div class="card">Data anak tidak ditemukan.</div>`;
+  const d=UI.draft; const old=pantauMap()[UI.formKey];
+  const sc=FOODS.reduce((a,f)=>a+(d[f.k]===1?1:0),0); const answered=FOODS.filter(f=>d[f.k]!=null).length;
+  const umur=ageMonths(s.tglLahir, d.tgl||todayYmd());
+  const probs=formProblems(s,d); const {start,end}=periodeRange(per());
+  return `
+  <button class="btn sm" data-go="sasaran" style="align-self:flex-start">← Daftar sasaran</button>
+  <section class="card child">
+    <div class="eyebrow">Identitas anak (sesuai e-PPGBM)</div>
+    <div class="nm">${esc(s.nama)}</div>
+    <div class="small muted num">NIK ${esc(s.nik||"-")} · ${esc(s.jk==="L"?"Laki-laki":s.jk==="P"?"Perempuan":"-")} · lahir ${esc(fmtDate(s.tglLahir))} · <b style="color:var(--ink)">${umur!=null?umur+" bulan":"-"}</b></div>
+    <div class="small muted">${esc(s.desa)} · Posyandu ${esc(s.posyandu||"-")}${s.namaOrtu?" · Ortu: "+esc(s.namaOrtu):""}</div>
+    ${(s.tbu||s.bbtb)?`<div class="row small" style="gap:6px"><span class="tag grey">BB/U ${esc(s.bbu||"-")}</span><span class="tag grey">TB/U ${esc(s.tbu||"-")}</span><span class="tag grey">BB/TB ${esc(s.bbtb||"-")}</span></div>`:""}
+    ${old?`<div class="banner info small"><div>Sudah diisi oleh <b>${esc(old.petugas)}</b>, ${esc(new Date(old.waktuUbah).toLocaleString("id-ID",{dateStyle:"medium",timeStyle:"short"}))}. Perubahan akan menimpa isian ini.</div></div>`:""}
+  </section>
+  <section class="card">
+    <label class="f" for="fTgl">Tanggal monitoring<input type="date" id="fTgl" value="${esc(d.tgl)}" min="${start}" max="${end}"></label>
+  </section>
+  <section class="card" style="gap:4px">
+    <div class="eyebrow">Recall 24 jam · tanyakan ke ibu/pengasuh</div>
+    <p class="small" style="margin:4px 0 6px"><b>"Kemarin, sejak bangun pagi sampai tidur malam, apakah anak …"</b></p>
+    ${FOODS.map((f,i)=>`<div class="fg ${UI.showErr&&d[f.k]==null?"missing":""}">
+      <span class="n">${i+1}</span><span class="q">${esc(f.q)}</span><span class="ex">${esc(f.ex)}</span>
+      <div class="yn" role="group" aria-label="${esc(f.q)}"><button class="y" data-fk="${esc(f.k)}" data-v="1" aria-pressed="${d[f.k]===1}">Ya</button><button class="t" data-fk="${esc(f.k)}" data-v="0" aria-pressed="${d[f.k]===0}">Tidak</button></div>
+    </div>`).join("")}
+  </section>
+  <section class="card">
+    <div class="fg ${UI.showErr&&d.intervensi==null?"missing":""}" style="border:0;padding:0"><span class="n">+</span><span class="q">Apakah anak mendapat intervensi?</span><span class="ex">PMT, konseling PMBA, kelas ibu balita, rujukan, dll.</span>
+      <div class="yn"><button class="y" data-iv="1" aria-pressed="${d.intervensi===1}">Ya</button><button class="t" data-iv="0" aria-pressed="${d.intervensi===0}">Tidak</button></div></div>
+    ${d.intervensi===1?`<div class="stack"><span class="small muted" style="font-weight:700">Jenis intervensi (boleh lebih dari satu)</span>
+      <div class="chips">${JENIS_INTERVENSI.map(j=>`<button class="chip" data-jn="${esc(j)}" aria-pressed="${(d.jenis||[]).includes(j)}">${esc(j)}</button>`).join("")}</div>
+      ${(d.jenis||[]).includes("Lainnya")?`<input type="text" id="fLain" placeholder="Sebutkan intervensi lainnya" value="${esc(d.lainnya||"")}">`:""}
+      <span class="small muted">Jenis intervensi hanya untuk rekap puskesmas. Ke e-PPGBM tetap dikirim 1/0.</span></div>`:""}
+  </section>
+  ${UI.showErr&&probs.length?`<div class="banner err"><div>${probs.map(esc).join("<br>")}</div></div>`:""}
+  <div class="sticky-save">
+    <div class="sum"><div class="spread small"><b>${sc}/8 kelompok pangan</b><span class="muted">${answered<8?(8-answered)+" belum dijawab":(sc>=5?"Beragam (≥5)":"Belum beragam (<5)")}</span></div>
+      <div class="meter" aria-hidden="true">${FOODS.map(f=>`<i class="${d[f.k]===1?"on":""}"></i>`).join("")}</div></div>
+    <button class="btn primary" data-act="simpan">Simpan</button>
+  </div>
+  ${old?`<button class="btn danger block" data-act="hapusIsian">Hapus isian anak ini</button>`:""}`;
+}
+function bindForm(){
+  const d=UI.draft;
+  const tg=document.getElementById("fTgl"); if(tg) tg.onchange=()=>{ d.tgl=tg.value; render(); };
+  $app.querySelectorAll("[data-fk]").forEach(b=>b.onclick=()=>{ d[b.dataset.fk]=+b.dataset.v; keepScroll(); });
+  $app.querySelectorAll("[data-iv]").forEach(b=>b.onclick=()=>{ d.intervensi=+b.dataset.iv; if(d.intervensi===0){d.jenis=[];d.lainnya="";} keepScroll(); });
+  $app.querySelectorAll("[data-jn]").forEach(b=>b.onclick=()=>{ const j=b.dataset.jn; d.jenis=d.jenis||[]; d.jenis=d.jenis.includes(j)?d.jenis.filter(x=>x!==j):[...d.jenis,j]; keepScroll(); });
+  const ln=document.getElementById("fLain"); if(ln) ln.oninput=()=>{ d.lainnya=ln.value; };
+}
+function keepScroll(){ const y=window.scrollY; render(); window.scrollTo(0,y); }
+
+/* ---- tambah manual ---- */
+function viewTambah(){
+  const all=sasaranList(); const desaList=[...new Set(all.map(s=>s.desa).concat(["MONCONGLOE","MONCONGLOE BULU","MONCONGLOE LAPPARA","BONTO MARANNU","BONTO BUNGA"]))].filter(Boolean).sort();
+  const posList=[...new Set(all.map(s=>s.posyandu))].filter(Boolean).sort();
+  const t=UI.tambah||{};
+  return `
+  <button class="btn sm" data-go="sasaran" style="align-self:flex-start">← Daftar sasaran</button>
+  <section class="card">
+    <h2>Tambah anak manual</h2>
+    <div class="banner warn"><div><b>Tulis NIK dan nama persis seperti di e-PPGBM</b>, termasuk huruf besar dan tanda titik. Kalau berbeda, baris ini akan ditolak saat diunggah.</div></div>
+    <label class="f" for="tNik">NIK (16 digit)<input type="tel" id="tNik" inputmode="numeric" maxlength="16" value="${esc(t.nik||"")}"></label>
+    <label class="f" for="tNama">Nama anak<input type="text" id="tNama" autocapitalize="characters" value="${esc(t.nama||"")}"></label>
+    <div class="grid2">
+      <label class="f" for="tJk">Jenis kelamin<select id="tJk"><option value="">Pilih</option><option ${t.jk==="L"?"selected":""} value="L">Laki-laki</option><option ${t.jk==="P"?"selected":""} value="P">Perempuan</option></select></label>
+      <label class="f" for="tLahir">Tanggal lahir<input type="date" id="tLahir" value="${esc(t.tglLahir||"")}"></label>
+    </div>
+    <label class="f" for="tOrtu">Nama orang tua (opsional)<input type="text" id="tOrtu" value="${esc(t.namaOrtu||"")}"></label>
+    <div class="grid2">
+      <label class="f" for="tDesa">Desa/Kel<select id="tDesa"><option value="">Pilih</option>${desaList.map(d=>`<option ${d===t.desa?"selected":""}>${esc(d)}</option>`).join("")}</select></label>
+      <label class="f" for="tPos">Posyandu<input type="text" id="tPos" list="posL" value="${esc(t.posyandu||"")}"><datalist id="posL">${posList.map(p=>`<option value="${esc(p)}">`).join("")}</datalist></label>
+    </div>
+    <div id="tErr" class="banner err" hidden></div>
+    <button class="btn primary block" data-act="tambahSimpan">Simpan dan isi pemantauan</button>
+  </section>`;
+}
+function bindTambah(){
+  const ids={nik:"tNik",nama:"tNama",jk:"tJk",tglLahir:"tLahir",namaOrtu:"tOrtu",desa:"tDesa",posyandu:"tPos"};
+  UI.tambah=UI.tambah||{};
+  for(const k in ids){ const el=document.getElementById(ids[k]); el.addEventListener("input",()=>{ UI.tambah[k]=el.value; }); el.addEventListener("change",()=>{ UI.tambah[k]=el.value; }); }
+}
+
+/* ---- rekap ---- */
+function viewRekap(){
+  const p=per(); const list=sasaranList(p); const pm=pantauMap(p);
+  const rs=list.map(s=>({s,r:pm[keyOf(s)]})).filter(x=>x.r);
+  const n=rs.length;
+  const group=(keyFn)=>{ const g={}; list.forEach(s=>{ const k=keyFn(s)||"-"; g[k]=g[k]||{n:0,d:0,m:0}; g[k].n++; const r=pm[keyOf(s)]; if(r){ g[k].d++; if(scoreOf(r)>=5) g[k].m++; } }); return Object.entries(g).sort((a,b)=>a[0].localeCompare(b[0])); };
+  const desa=group(s=>s.desa);
+  const jenis={}; rs.forEach(({r})=>(r.jenis||[]).forEach(j=>jenis[j]=(jenis[j]||0)+1));
+  const byP={}; rs.forEach(({r})=>byP[r.petugas]=(byP[r.petugas]||0)+1);
+  const umurG=[["6–8 bln",6,8],["9–11 bln",9,11],["12–23 bln",12,23]].map(([l,a,b])=>{ const x=rs.filter(({s,r})=>{const u=ageMonths(s.tglLahir,r.tgl); return u>=a&&u<=b;}); return [l,x.length,x.filter(({r})=>scoreOf(r)>=5).length]; });
+  return `
+  <section class="card">
+    <div class="eyebrow">Rekap ${esc(periodeLabel(p))}</div>
+    <div class="grid3">
+      <div class="stat"><span class="v">${n}/${list.length}</span><span class="l">Sudah diisi</span></div>
+      <div class="stat"><span class="v">${n?pct(rs.filter(({r})=>scoreOf(r)>=5).length,n)+"%":"–"}</span><span class="l">Skor ≥5 dari 8</span></div>
+      <div class="stat"><span class="v">${rs.filter(({r})=>r.intervensi).length}</span><span class="l">Dapat intervensi</span></div>
+    </div>
+    <p class="small muted" style="margin:0">Skor ≥5/8 adalah perkiraan MDD untuk pantauan internal. Kategori resmi tetap dari e-PPGBM setelah diunggah.</p>
+  </section>
+  <section class="card"><h2>Per desa</h2>
+    <div class="tbl-wrap"><table><thead><tr><th>Desa/Kel</th><th class="r">Anak</th><th class="r">Diisi</th><th class="r">%</th><th class="r">≥5/8</th></tr></thead>
+    <tbody>${desa.map(([k,v])=>`<tr><td>${esc(k)}</td><td class="r">${v.n}</td><td class="r">${v.d}</td><td class="r">${pct(v.d,v.n)}%</td><td class="r">${v.d?pct(v.m,v.d)+"%":"–"}</td></tr>`).join("")||`<tr><td colspan="5" class="muted">Belum ada data</td></tr>`}</tbody></table></div>
+    <details><summary>Per posyandu</summary><div class="tbl-wrap" style="margin-top:8px"><table><thead><tr><th>Posyandu</th><th class="r">Anak</th><th class="r">Diisi</th><th class="r">≥5/8</th></tr></thead>
+    <tbody>${group(s=>s.posyandu).map(([k,v])=>`<tr><td>${esc(k)}</td><td class="r">${v.n}</td><td class="r">${v.d}</td><td class="r">${v.d?pct(v.m,v.d)+"%":"–"}</td></tr>`).join("")}</tbody></table></div></details>
+  </section>
+  <section class="card"><h2>Konsumsi per kelompok pangan</h2>
+    <p class="small muted" style="margin:0">Persentase anak yang mengonsumsi kelompok pangan ini kemarin (n=${n}).</p>
+    <div class="stack">${FOODS.map((f,i)=>{ const c=rs.filter(({r})=>r[f.k]===1).length; return `<div class="stack small" style="gap:4px"><div class="spread"><span style="font-weight:600">${i+1}. ${esc(f.k)}</span><span class="num muted">${c} anak · <b style="color:var(--ink)">${n?pct(c,n)+"%":"–"}</b></span></div><div class="progress" style="height:8px"><i style="width:${pct(c,n)}%"></i></div></div>`; }).join("")}</div>
+  </section>
+  <section class="card"><h2>Per kelompok umur</h2>
+    <div class="tbl-wrap"><table><thead><tr><th>Umur</th><th class="r">Diisi</th><th class="r">Skor ≥5</th></tr></thead><tbody>
+    ${umurG.map(([l,a,b])=>`<tr><td>${l}</td><td class="r">${a}</td><td class="r">${a?pct(b,a)+"%":"–"}</td></tr>`).join("")}</tbody></table></div>
+  </section>
+  <section class="card"><h2>Intervensi dan petugas</h2>
+    <div class="tbl-wrap"><table><thead><tr><th>Jenis intervensi</th><th class="r">Anak</th></tr></thead><tbody>
+    ${JENIS_INTERVENSI.map(j=>`<tr><td>${esc(j)}</td><td class="r">${jenis[j]||0}</td></tr>`).join("")}</tbody></table></div>
+    <div class="tbl-wrap"><table><thead><tr><th>Petugas</th><th class="r">Isian</th></tr></thead><tbody>
+    ${Object.entries(byP).map(([k,v])=>`<tr><td>${esc(k)}</td><td class="r">${v}</td></tr>`).join("")||`<tr><td colspan="2" class="muted">Belum ada isian</td></tr>`}</tbody></table></div>
+  </section>`;
+}
+
+/* ---- menu ---- */
+function viewMenu(){
+  const k=isKoor();
+  const it=(go,t,d)=>`<button class="item" data-go="${go}"><span class="who"><span class="nm">${t}</span><span class="meta">${d}</span></span><span aria-hidden="true">›</span></button>`;
+  return `
+  ${k?`<div class="eyebrow">Koordinator</div><div class="list">
+    ${it("impor","Impor data sasaran","Unggah file Daftar Anak Status Gizi dari e-PPGBM")}
+    ${it("unduh","Unduh Excel e-PPGBM","File siap unggah, format template import MP-ASI")}
+    ${it("atur","Periode &amp; petugas","Ganti periode aktif, tambah petugas, ganti PIN")}
+  </div>`:""}
+  <div class="eyebrow">Umum</div><div class="list">
+    ${it("tambah","Tambah anak manual","Anak 6–23 bulan yang tidak ada di file impor")}
+    ${it("cadangan","Cadangan data","Simpan atau pulihkan data sebagai file")}
+    <button class="item" data-act="keluar"><span class="who"><span class="nm">Keluar</span><span class="meta">Masuk sebagai ${esc(me().nama)}</span></span></button>
+  </div>
+  <p class="small muted">Pantau MP-ASI versi ${APP_VERSI}. Tahap 1: data tersimpan di perangkat ini. Sinkron Google Sheet menyusul di tahap 2.</p>`;
+}
+
+/* ---- impor ---- */
+function viewImpor(){
+  if(!isKoor()) return `<div class="card">Hanya koordinator yang dapat mengimpor data.</div>`;
+  const p=per(); const pv=UI.impor;
+  return `
+  <button class="btn sm" data-go="menu" style="align-self:flex-start">← Menu</button>
+  <section class="card">
+    <h2>Impor data sasaran · ${esc(periodeLabel(p))}</h2>
+    <p class="small muted" style="margin:0">Dari e-PPGBM: <b>Laporan → Daftar Anak Berdasarkan Status Gizi</b>. Gunakan data bulan ${esc(BULAN[+p.slice(5)-1])} atau ${esc(BULAN[+prevMonth(p).slice(5)-1])}. Boleh pilih dua file sekaligus; anak yang sama digabung berdasarkan NIK.</p>
+    <div class="file-drop"><input type="file" id="iF" accept=".xls,.xlsx,.htm,.html" multiple aria-label="Pilih file Daftar Anak"><span class="small muted">Format .xls asli e-PPGBM atau .xlsx</span></div>
+    ${UI.imporErr?`<div class="banner err"><div>${esc(UI.imporErr)}</div></div>`:""}
+  </section>
+  ${pv?`<section class="card">
+    <h2>Pratinjau hasil</h2>
+    <div class="grid3">
+      <div class="stat"><span class="v">${pv.lolos.length}</span><span class="l">Anak 6–23 bln</span></div>
+      <div class="stat"><span class="v">${pv.baru}</span><span class="l">Baru</span></div>
+      <div class="stat"><span class="v">${pv.perbarui}</span><span class="l">Diperbarui</span></div>
+    </div>
+    <div class="small muted">${pv.totalBaris} baris dibaca · ${pv.dup} duplikat digabung · ${pv.luar} anak di luar 6–23 bulan dilewati${pv.tanpaTgl.length?" · "+pv.tanpaTgl.length+" tanpa tanggal lahir":""}</div>
+    ${!pv.bulanCocok?`<div class="banner warn"><div>Data pengukuran di file ini dari bulan <b>${Object.keys(pv.bulanData).map(b=>esc(periodeLabel(b))).join(", ")||"?"}</b>, bukan ${esc(periodeLabel(p))} atau ${esc(periodeLabel(prevMonth(p)))}. Pastikan filenya benar.</div></div>`:""}
+    ${pv.nikKosong.length||pv.nikSalah.length?`<div class="banner warn"><div><b>${pv.nikKosong.length+pv.nikSalah.length} anak NIK-nya bermasalah</b> (${pv.nikKosong.length} kosong, ${pv.nikSalah.length} tidak 16 digit). Mereka tetap bisa diisi, tapi tidak ikut di Excel e-PPGBM sampai NIK diperbaiki di e-PPGBM dan diimpor ulang.</div></div>`:""}
+    <div class="tbl-wrap"><table><thead><tr><th>Desa/Kel</th><th class="r">Anak 6–23 bln</th></tr></thead><tbody>
+      ${Object.entries(pv.byDesa).sort().map(([d,n])=>`<tr><td>${esc(d)}</td><td class="r">${n}</td></tr>`).join("")}</tbody></table></div>
+    ${DB.demo?`<div class="banner info"><div>Data contoh akan dihapus saat impor disimpan.</div></div>`:""}
+    <div class="row"><button class="btn primary" data-act="imporSimpan" ${pv.lolos.length?"":"disabled"}>Simpan ${pv.lolos.length} anak ke ${esc(periodeLabel(p))}</button><button class="btn" data-act="imporBatal">Batal</button></div>
+  </section>`:""}`;
+}
+function bindImpor(){
+  const f=document.getElementById("iF"); if(!f) return;
+  f.onchange=async()=>{ UI.imporErr=null; UI.impor=null; const files=[...f.files]; if(!files.length) return;
+    try{ let all=[]; for(const fl of files) all=all.concat(await readImportFile(fl)); UI.impor=buildImportPreview(all, per()); }
+    catch(e){ UI.imporErr=e.message||String(e); }
+    render(); };
+}
+
+/* ---- unduh ---- */
+function viewUnduh(){
+  if(!isKoor()) return `<div class="card">Hanya koordinator yang dapat mengunduh file e-PPGBM.</div>`;
+  const p=per(); const {rows,dibuang,manual}=exportRows(p); const list=sasaranList(p);
+  const belum=list.length-Object.keys(pantauMap(p)).filter(k=>list.some(s=>keyOf(s)===k)).length;
+  return `
+  <button class="btn sm" data-go="menu" style="align-self:flex-start">← Menu</button>
+  <section class="card">
+    <h2>Unduh Excel e-PPGBM · ${esc(periodeLabel(p))}</h2>
+    <p class="small muted" style="margin:0">Format sama dengan template import MP-ASI: Sheet1, 13 kolom, semua sel teks, tanggal YYYY-MM-DD, isian 1/0.</p>
+    <div class="grid3">
+      <div class="stat"><span class="v">${rows.length}</span><span class="l">Siap diunggah</span></div>
+      <div class="stat"><span class="v">${belum}</span><span class="l">Belum diisi</span></div>
+      <div class="stat"><span class="v">${dibuang.length}</span><span class="l">Tertahan (NIK)</span></div>
+    </div>
+    ${DB.demo?`<div class="banner warn"><div>Isian saat ini masih <b>data contoh</b>. Jangan unggah file ini ke e-PPGBM.</div></div>`:""}
+    ${belum?`<div class="banner info"><div>Masih ada ${belum} anak yang belum diisi. File tetap bisa diunduh sekarang.</div></div>`:""}
+    <button class="btn primary block" data-act="unduhEppgbm" ${rows.length?"":"disabled"}>Unduh MPASI_Moncongloe_${esc(p)}.xlsx</button>
+    ${manual.length?`<details open><summary>${manual.length} anak ditambah manual, cek nama dan NIK di e-PPGBM</summary><ul class="small" style="margin:8px 0 0;padding-left:18px">${manual.map(s=>`<li>${esc(s.nama)} · <span class="num">${esc(s.nik)}</span></li>`).join("")}</ul></details>`:""}
+    ${dibuang.length?`<details><summary>${dibuang.length} isian tertahan karena NIK</summary><ul class="small" style="margin:8px 0 0;padding-left:18px">${dibuang.map(x=>`<li>${esc(x.s.nama)}: ${esc(x.alasan)}</li>`).join("")}</ul></details>`:""}
+  </section>
+  <section class="card">
+    <h2>Rekap lengkap (internal)</h2>
+    <p class="small muted" style="margin:0">Semua sasaran beserta desa, posyandu, status gizi, skor, jenis intervensi, dan petugas. Untuk laporan puskesmas, <b>bukan</b> untuk diunggah.</p>
+    <button class="btn block" data-act="unduhRekap">Unduh rekap_MPASI_${esc(p)}.xlsx</button>
+  </section>`;
+}
+
+/* ---- atur ---- */
+function viewAtur(){
+  if(!isKoor()) return `<div class="card">Hanya koordinator.</div>`;
+  const p=per();
+  return `
+  <button class="btn sm" data-go="menu" style="align-self:flex-start">← Menu</button>
+  <section class="card">
+    <h2>Periode aktif</h2>
+    <label class="f" for="aPer">Bulan pemantauan<select id="aPer">${periodeOptions().map(o=>`<option value="${o}" ${o===p?"selected":""}>${esc(periodeLabel(o))}${DB.sasaran[o]&&DB.sasaran[o].length?" · "+DB.sasaran[o].length+" anak":""}</option>`).join("")}</select></label>
+    <p class="small muted" style="margin:0">Data periode lain tetap tersimpan. Semua petugas bekerja di periode aktif.</p>
+  </section>
+  <section class="card">
+    <h2>Petugas</h2>
+    <div class="list">${DB.petugas.map(u=>`<div class="item" style="cursor:default"><span class="who"><span class="nm">${esc(u.nama)}</span><span class="meta">${u.peran==="koordinator"?"Koordinator":"Petugas gizi"}${u.pinDefault?" · PIN masih 1234":""}</span></span>
+      <button class="btn sm" data-act="gantiPin" data-id="${esc(u.id)}">Ganti PIN</button>${u.id!==DB.sesi?`<button class="btn sm danger" data-act="hapusPetugas" data-id="${esc(u.id)}">Hapus</button>`:""}</div>`).join("")}</div>
+    <div class="stack"><span class="small muted" style="font-weight:700">Tambah petugas</span>
+      <div class="grid2"><input type="text" id="aNama" placeholder="Nama petugas"><input type="password" id="aPin" inputmode="numeric" maxlength="8" placeholder="PIN 4–8 angka"></div>
+      <label class="row small" style="gap:8px"><input type="checkbox" id="aKoor"> Jadikan koordinator</label>
+      <button class="btn" data-act="tambahPetugas">Tambah petugas</button></div>
+  </section>
+  <section class="card">
+    <h2>Data contoh</h2>
+    <p class="small muted" style="margin:0">${DB.demo?"Data contoh sedang aktif.":"Tidak ada data contoh."}</p>
+    ${DB.demo?`<button class="btn danger" data-act="hapusDemo">Hapus data contoh</button>`:`<button class="btn" data-act="muatDemo">Muat data contoh ke ${esc(periodeLabel(p))}</button>`}
+  </section>`;
+}
+function bindAtur(){
+  const s=document.getElementById("aPer"); if(s) s.onchange=()=>{ DB.pengaturan.periode=s.value; save(); toast("Periode aktif: "+periodeLabel(s.value)); render(); };
+}
+
+/* ---- cadangan ---- */
+function viewCadangan(){
+  return `
+  <button class="btn sm" data-go="menu" style="align-self:flex-start">← Menu</button>
+  <section class="card">
+    <h2>Simpan cadangan</h2>
+    <p class="small muted" style="margin:0">Menyimpan semua sasaran dan isian di perangkat ini ke satu file .json. Selama belum ada sinkron Google Sheet, file ini juga bisa dikirim ke koordinator (WA/Drive) untuk digabung.</p>
+    <button class="btn primary" data-act="cadSimpan">Unduh file cadangan</button>
+  </section>
+  <section class="card">
+    <h2>Gabungkan dari file cadangan</h2>
+    <p class="small muted" style="margin:0">Sasaran, isian, akun petugas, dan periode aktif dari file digabung ke perangkat ini. Untuk anak yang sama, isian yang paling baru diubah yang dipakai. Akun yang sudah ada di perangkat ini tidak diubah.</p>
+    <div class="banner info small"><div><b>Menyiapkan HP petugas (tahap 1):</b> koordinator mengunduh file cadangan setelah impor sasaran dan menambah petugas, lalu file itu dibuka di sini pada HP petugas. Setelah itu petugas bisa login dengan nama dan PIN-nya.</div></div>
+    <input type="file" id="cF" accept=".json,application/json" aria-label="Pilih file cadangan">
+  </section>`;
+}
+function bindCadangan(){
+  const f=document.getElementById("cF"); if(!f) return;
+  f.onchange=async()=>{ const fl=f.files[0]; if(!fl) return;
+    try{ const x=JSON.parse(await fl.text()); if(!x || !x.sasaran || !x.pemantauan) throw new Error("Bukan file cadangan Pantau MP-ASI.");
+      let nS=0,nP=0,nU=0;
+      const adaReal=Object.values(x.sasaran).some(l=>(l||[]).some(s=>!s.demo));
+      if(adaReal && DB.demo) clearDemo();
+      (x.petugas||[]).forEach(u=>{ if(u && u.id && !DB.petugas.some(v=>v.id===u.id) && !DB.petugas.some(v=>v.nama.toLowerCase()===String(u.nama).toLowerCase())){ DB.petugas.push({id:u.id,nama:u.nama,peran:u.peran,pinHash:u.pinHash}); nU++; } });
+      if(x.periode && /^\d{4}-\d{2}$/.test(x.periode)) DB.pengaturan.periode=x.periode;
+      for(const p of Object.keys(x.sasaran)){ const cur=DB.sasaran[p]||[]; const pos=new Map(cur.map((s,i)=>[keyOf(s),i]));
+        for(const s of x.sasaran[p]){ if(s.demo) continue; const k=keyOf(s); if(!pos.has(k)){ pos.set(k,cur.length); cur.push(s); nS++; } } DB.sasaran[p]=cur; }
+      for(const p of Object.keys(x.pemantauan)){ const cur=pantauMap(p); for(const [k,r] of Object.entries(x.pemantauan[p])){ if(!cur[k] || (r.waktuUbah||"")>(cur[k].waktuUbah||"")){ cur[k]=r; nP++; } } }
+      save(); toast(nS+" anak baru, "+nP+" isian digabung"+(nU?", "+nU+" petugas ditambahkan":"")); render(); }
+    catch(e){ toast("Gagal: "+(e.message||e)); } };
+}
+
+/* ============ AKSI ============ */
+const ACT={
+  simpan(){
+    const s=sasaranList().find(x=>keyOf(x)===UI.formKey); const d=UI.draft; const P=formProblems(s,d);
+    if(P.length){ UI.showErr=true; keepScroll(); toast(P[0]); return; }
+    const u=me(); const pm=pantauMap(); const old=pm[UI.formKey]; const now=new Date().toISOString();
+    const rec={tgl:d.tgl, intervensi:d.intervensi, jenis:d.intervensi?d.jenis:[], lainnya:d.intervensi&&(d.jenis||[]).includes("Lainnya")?(d.lainnya||""):"",
+      petugas:u.nama, petugasId:u.id, waktuInput:old?old.waktuInput:now, waktuUbah:now};
+    FOODS.forEach(f=>rec[f.k]=d[f.k]); pm[UI.formKey]=rec; save();
+    toast("Tersimpan: "+s.nama+" ("+scoreOf(rec)+"/8)"); UI.formKey=null; UI.draft=null; go("sasaran");
+  },
+  async hapusIsian(){ const s=sasaranList().find(x=>keyOf(x)===UI.formKey);
+    if(!(await ask(`Hapus isian pemantauan <b>${esc(s.nama)}</b>? Anak tetap ada di daftar sasaran.`,"Hapus isian",true))) return;
+    delete pantauMap()[UI.formKey]; save(); toast("Isian dihapus"); go("sasaran"); },
+  tambahSimpan(){
+    const t=UI.tambah||{}; const e=[]; const nik=(t.nik||"").trim(); const nama=clean(t.nama);
+    if(!nikOk(nik)) e.push("NIK harus 16 angka.");
+    if(!nama) e.push("Isi nama anak.");
+    if(!t.jk) e.push("Pilih jenis kelamin.");
+    if(!t.tglLahir) e.push("Isi tanggal lahir.");
+    if(!t.desa) e.push("Pilih desa.");
+    const {start,end}=periodeRange(per());
+    if(t.tglLahir){ const a=ageMonths(t.tglLahir,end), b=ageMonths(t.tglLahir,start); if(!(a>=6 && b<=23)) e.push("Anak tidak berusia 6–23 bulan di "+periodeLabel(per())+"."); }
+    if(nik && sasaranList().some(s=>s.nik===nik)) e.push("NIK ini sudah ada di daftar sasaran.");
+    const box=document.getElementById("tErr");
+    if(e.length){ box.innerHTML="<div>"+e.map(esc).join("<br>")+"</div>"; box.hidden=false; return; }
+    const s={nik, nama, jk:t.jk, tglLahir:t.tglLahir, namaOrtu:clean(t.namaOrtu), desa:t.desa, posyandu:clean(t.posyandu).toUpperCase(), bbu:"", tbu:"", bbtb:"", sumber:"manual", dibuatOleh:me().nama};
+    DB.sasaran[per()]=sasaranList().concat([s]); save(); UI.tambah=null; toast("Anak ditambahkan"); openForm(keyOf(s));
+  },
+  imporSimpan(){ const pv=UI.impor; commitImport(pv); UI.impor=null; toast(pv.lolos.length+" anak tersimpan sebagai sasaran"); go("beranda"); },
+  imporBatal(){ UI.impor=null; UI.imporErr=null; render(); },
+  unduhEppgbm(){ try{ const p=per(); saveFile("MPASI_Moncongloe_"+p+".xlsx", buildEppgbmXlsx(p), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"); }catch(e){ toast("Gagal membuat file: "+e.message); } },
+  unduhRekap(){ try{ const p=per(); saveFile("rekap_MPASI_"+p+".xlsx", buildRekapXlsx(p), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"); }catch(e){ toast("Gagal membuat file: "+e.message); } },
+  cadSimpan(){ const x={aplikasi:"Pantau MP-ASI Moncongloe", versi:APP_VERSI, dibuat:new Date().toISOString(), oleh:me().nama, periode:per(), petugas:DB.petugas.map(u=>({id:u.id,nama:u.nama,peran:u.peran,pinHash:u.pinHash})), sasaran:DB.sasaran, pemantauan:DB.pemantauan};
+    saveFile("cadangan_MPASI_"+me().nama.replace(/\W+/g,"_")+"_"+todayYmd()+".json", JSON.stringify(x), "application/json"); },
+  async keluar(){ if(!(await ask("Keluar dari aplikasi? Data tetap tersimpan di perangkat ini.","Keluar"))) return; DB.sesi=null; save(); render(); },
+  async tambahPetugas(){ const n=clean(document.getElementById("aNama").value); const pin=document.getElementById("aPin").value.trim(); const k=document.getElementById("aKoor").checked;
+    if(!n) return toast("Isi nama petugas"); if(!/^\d{4,8}$/.test(pin)) return toast("PIN harus 4–8 angka");
+    if(DB.petugas.some(u=>u.nama.toLowerCase()===n.toLowerCase())) return toast("Nama sudah ada");
+    DB.petugas.push({id:uid(), nama:n, peran:k?"koordinator":"petugas", pinHash:await hashPin(pin)}); save(); toast("Petugas ditambahkan"); render(); },
+  async hapusPetugas(b){ const u=DB.petugas.find(x=>x.id===b.dataset.id); if(!u) return;
+    if(!(await ask(`Hapus petugas <b>${esc(u.nama)}</b>? Isian yang sudah dibuat tetap tersimpan.`,"Hapus",true))) return;
+    DB.petugas=DB.petugas.filter(x=>x.id!==u.id); save(); render(); },
+  async gantiPin(b){ const u=DB.petugas.find(x=>x.id===b.dataset.id); if(!u) return;
+    $ov.innerHTML=`<div class="modal-bg"><div class="modal"><b>PIN baru untuk ${esc(u.nama)}</b><input type="password" id="nPin" inputmode="numeric" maxlength="8" placeholder="4–8 angka"><div class="row" style="justify-content:flex-end"><button class="btn" id="mNo">Batal</button><button class="btn primary" id="mOk">Simpan PIN</button></div></div></div>`;
+    document.getElementById("nPin").focus();
+    document.getElementById("mNo").onclick=()=>$ov.innerHTML="";
+    document.getElementById("mOk").onclick=async()=>{ const pin=document.getElementById("nPin").value.trim(); if(!/^\d{4,8}$/.test(pin)) return toast("PIN harus 4–8 angka");
+      u.pinHash=await hashPin(pin); delete u.pinDefault; save(); $ov.innerHTML=""; toast("PIN diganti"); render(); }; },
+  async hapusDemo(){ if(!(await ask("Hapus semua data contoh?","Hapus",true))) return; clearDemo(); save(); render(); },
+  muatDemo(){ if(sasaranList().some(s=>!s.demo)){ toast("Periode ini sudah berisi data sungguhan"); return; } seedDemo(); save(); render(); }
+};
+
+/* ============ MULAI ============ */
+async function start(){
+  const had=load();
+  if(!DB.petugas.length){ DB.petugas=[{id:uid(), nama:"Koordinator", peran:"koordinator", pinHash:await hashPin("1234"), pinDefault:true}]; }
+  if(!had){ seedDemo(); }
+  save(); render();
+  try{ if(window.claude && typeof window.claude.use==="function"){ window.claude.use("downloads").then(d=>{ dlCap=d; }).catch(()=>{}); } }catch(e){}
+}
+start();
+})();
+</script>
+<script>
+if ("serviceWorker" in navigator && location.protocol === "https:") {
+  window.addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
+}
+</script>
+
+</body>
+</html>
